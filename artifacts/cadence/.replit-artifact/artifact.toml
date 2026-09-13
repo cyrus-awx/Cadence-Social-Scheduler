@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Cadence"
+description = "A polished social media scheduling workspace for small businesses, with an at-a-glance dashboard, calendar planning, pricing comparison, and billing status."
+version = "1.0.0"
+id = "artifacts/cadence"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23919
+
+[services.development]
+run = "pnpm --filter @workspace/cadence run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cadence", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/cadence/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23919"
+BASE_PATH = "/"
