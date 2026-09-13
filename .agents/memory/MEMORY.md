@@ -1,0 +1,1 @@
+- [Airwallex Billing integration](airwallex-billing.md) — use current Billing Elements mode and discover catalog resources before creating them.

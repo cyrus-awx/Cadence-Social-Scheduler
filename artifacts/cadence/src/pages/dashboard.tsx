@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { ArrowUpRight, ChevronRight, Plus, Sparkles } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { PostCard } from '@/components/post-card';
 import { cadencePosts } from '@/lib/cadence-data';
+import { useGetBillingStatus } from '@workspace/api-client-react';
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
   const [showLimitMessage, setShowLimitMessage] = useState(false);
+  const { data: billing } = useGetBillingStatus();
+  const isPro = billing?.plan === 'pro';
   const scheduledPosts = cadencePosts.filter((post) => post.status === 'Scheduled');
   const publishedPosts = cadencePosts.filter((post) => post.status === 'Published');
   const now = new Date();
@@ -30,19 +34,19 @@ export default function Dashboard() {
           <h1 className="text-[30px] font-extrabold tracking-[-0.05em] text-stone-900 sm:text-[36px]" data-testid="text-dashboard-heading">{greeting}, Maya.</h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-stone-500" data-testid="text-dashboard-subheading">Your week is in a good rhythm. Here&apos;s what&apos;s ready to meet the world.</p>
         </div>
-        <button type="button" onClick={() => setShowLimitMessage(true)} className="inline-flex w-fit items-center justify-center gap-2 rounded-[10px] bg-[#C2410C] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="button-schedule-new-post">
+        <button type="button" onClick={() => setShowLimitMessage(!isPro)} className="inline-flex w-fit items-center justify-center gap-2 rounded-[10px] bg-[#C2410C] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="button-schedule-new-post">
           <Plus className="h-4 w-4" />
           Schedule a post
         </button>
       </section>
 
-      {showLimitMessage && (
+      {showLimitMessage && !isPro && (
         <div className="mb-9 flex flex-col gap-4 rounded-[10px] border border-stone-200 bg-stone-50 p-4 sm:flex-row sm:items-center sm:justify-between" data-testid="alert-post-limit">
           <div>
             <p className="text-sm font-semibold text-stone-900">You&apos;ve used all 10 posts on Starter. Upgrade to keep scheduling.</p>
             <p className="mt-1 text-xs text-stone-500">Your current posts will stay published and on schedule.</p>
           </div>
-          <button type="button" className="shrink-0 rounded-[10px] bg-[#C2410C] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9a340a]" onClick={() => undefined} data-testid="button-upgrade-pro">Upgrade to Pro</button>
+          <button type="button" className="shrink-0 rounded-[10px] bg-[#C2410C] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9a340a]" onClick={() => navigate('/billing?upgrade=pro')} data-testid="button-upgrade-pro">Upgrade to Pro</button>
         </div>
       )}
 

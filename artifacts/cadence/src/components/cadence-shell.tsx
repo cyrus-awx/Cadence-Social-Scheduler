@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, Plus, Settings2, Sparkles } from 'lucide-react';
+import { useGetBillingStatus } from '@workspace/api-client-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, testId: 'link-nav-dashboard' },
@@ -15,6 +16,9 @@ export function CadenceShell({ children }: CadenceShellProps) {
   const [location] = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const { data: billing } = useGetBillingStatus();
+  const isPro = billing?.plan === 'pro';
+  const route = location.split('?')[0];
 
   return (
     <div className="min-h-[100dvh] bg-background text-stone-900">
@@ -39,7 +43,7 @@ export function CadenceShell({ children }: CadenceShellProps) {
         <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">Workspace</p>
         <nav className="space-y-1" aria-label="Primary navigation">
           {navItems.map(({ href, label, icon: Icon, testId }) => {
-            const active = location === href || (href === '/dashboard' && location === '/');
+            const active = route === href || (href === '/dashboard' && route === '/');
             return (
               <Link
                 key={href}
@@ -56,28 +60,28 @@ export function CadenceShell({ children }: CadenceShellProps) {
 
         <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">Account</p>
         <nav className="space-y-1">
-          <Link href="/pricing" className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] font-semibold transition-colors ${location === '/pricing' ? 'bg-[#C2410C] text-white' : 'text-stone-600 hover:bg-stone-200/50 hover:text-stone-900'}`} data-testid="link-nav-pricing">
-            <Sparkles className="h-[17px] w-[17px]" strokeWidth={location === '/pricing' ? 2.5 : 2} />
+          <Link href="/pricing" className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] font-semibold transition-colors ${route === '/pricing' ? 'bg-[#C2410C] text-white' : 'text-stone-600 hover:bg-stone-200/50 hover:text-stone-900'}`} data-testid="link-nav-pricing">
+            <Sparkles className="h-[17px] w-[17px]" strokeWidth={route === '/pricing' ? 2.5 : 2} />
             Plans &amp; pricing
           </Link>
-          <Link href="/billing" className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] font-semibold transition-colors ${location === '/billing' ? 'bg-[#C2410C] text-white' : 'text-stone-600 hover:bg-stone-200/50 hover:text-stone-900'}`} data-testid="link-nav-billing">
-            <CreditCard className="h-[17px] w-[17px]" strokeWidth={location === '/billing' ? 2.5 : 2} />
+          <Link href="/billing" className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] font-semibold transition-colors ${route === '/billing' ? 'bg-[#C2410C] text-white' : 'text-stone-600 hover:bg-stone-200/50 hover:text-stone-900'}`} data-testid="link-nav-billing">
+            <CreditCard className="h-[17px] w-[17px]" strokeWidth={route === '/billing' ? 2.5 : 2} />
             Billing
           </Link>
         </nav>
 
         <div className="mt-auto rounded-[10px] border border-stone-200 bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-stone-600">Starter plan</span>
-            <span className="rounded-full bg-[#C2410C]/10 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">10 / 10</span>
+            <span className="text-[11px] font-semibold text-stone-600">{isPro ? 'Pro plan' : 'Starter plan'}</span>
+            <span className="rounded-full bg-[#C2410C]/10 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">{isPro ? 'Unlimited' : '10 / 10'}</span>
           </div>
           <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
-            <div className="h-full w-full rounded-full bg-[#C2410C]" />
+            <div className={`h-full rounded-full bg-[#C2410C] ${isPro ? 'w-1/4' : 'w-full'}`} />
           </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-stone-500">You&apos;re at your monthly limit.</p>
-          <Link href="/pricing" className="flex items-center justify-center gap-2 rounded-[10px] border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-bold text-stone-900 transition-colors hover:bg-stone-100" data-testid="link-sidebar-upgrade">
+          <p className="mb-3 text-[11px] leading-relaxed text-stone-500">{isPro ? 'Your posting allowance is unlimited.' : 'You’re at your monthly limit.'}</p>
+          <Link href={isPro ? '/billing' : '/billing?upgrade=pro'} className="flex items-center justify-center gap-2 rounded-[10px] border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-bold text-stone-900 transition-colors hover:bg-stone-100" data-testid="link-sidebar-upgrade">
             <Sparkles className="h-3.5 w-3.5" />
-            See Pro
+            {isPro ? 'Manage billing' : 'Upgrade to Pro'}
           </Link>
         </div>
       </aside>
@@ -93,7 +97,7 @@ export function CadenceShell({ children }: CadenceShellProps) {
           <div className="hidden text-sm font-medium text-stone-500 md:block">
             <span className="text-stone-900">Northstar Roasters</span>
             <span className="mx-2 text-stone-300">/</span>
-            <span>{location === '/calendar' ? 'Calendar' : location === '/pricing' ? 'Plans & pricing' : location === '/billing' ? 'Billing' : 'Overview'}</span>
+            <span>{route === '/calendar' ? 'Calendar' : route === '/pricing' ? 'Plans & pricing' : route === '/billing' ? 'Billing' : 'Overview'}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
