@@ -103,6 +103,6 @@ export const connectedAccounts = [
 
 export const planFeatures = {
   Starter: ['10 scheduled posts / month', '3 connected accounts', 'Calendar planning view'],
-  Pro: ['Unlimited scheduled posts', 'All Starter features', 'Best-time suggestions', 'Post performance notes'],
-  Business: ['Unlimited scheduled posts', 'Up to 10 team members', 'Approval workflows', 'Priority support'],
+  Pro: ['Unlimited scheduled posts', '5 connected accounts', 'Best-time suggestions', 'Post performance notes'],
+  Business: ['Unlimited scheduled posts', '20 connected accounts', 'Team features', 'Approval workflows'],
 };

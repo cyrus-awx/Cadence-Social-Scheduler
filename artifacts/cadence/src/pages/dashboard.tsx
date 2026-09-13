@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, CalendarDays, Check, ChevronRight, CircleAlert, Plus, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, Check, ChevronRight, CircleAlert, Link2, Plus, Sparkles, TrendingUp } from 'lucide-react';
 import { Link } from 'wouter';
 import { PostCard } from '@/components/post-card';
 import { cadencePosts } from '@/lib/cadence-data';
@@ -36,26 +36,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <section className="mb-9 grid gap-4 lg:grid-cols-[1.35fr_0.8fr_0.8fr]">
-        <div className="relative overflow-hidden rounded-2xl bg-[#312E81] p-6 text-white shadow-[0_12px_30px_rgba(49,46,129,0.16)] sm:p-7">
-          <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full border-[28px] border-indigo-400/15" />
-          <div className="absolute -bottom-24 right-12 h-44 w-44 rounded-full border-[20px] border-amber-300/10" />
-          <div className="relative">
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold text-indigo-200">April posting rhythm</p>
-                <p className="mt-1 text-sm font-medium text-white/90">Starter plan usage</p>
-              </div>
-              <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-amber-200" data-testid="status-plan">Starter</span>
-            </div>
-            <div className="flex items-end gap-3">
-              <p className="text-5xl font-extrabold tracking-[-0.06em]" data-testid="text-posts-used">10</p>
-              <p className="mb-1.5 text-sm font-medium text-indigo-200">of 10 posts used</p>
-            </div>
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-indigo-950/60" data-testid="progress-post-usage"><div className="h-full w-full rounded-full bg-[#FCD34D]" /></div>
-            <p className="mt-3 text-xs text-indigo-200">Refreshes on May 1, 2025</p>
-          </div>
-        </div>
+      <section className="mb-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-indigo-100/80 bg-white p-6 cadence-shadow">
           <div className="flex items-start justify-between">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-primary"><CalendarDays className="h-[18px] w-[18px]" /></span>
@@ -73,6 +54,41 @@ export default function Dashboard() {
           <p className="mt-7 text-3xl font-extrabold tracking-[-0.05em] text-[#312E81]" data-testid="text-published-count">{publishedPosts.length}</p>
           <p className="mt-1 text-xs font-semibold text-muted-foreground">Published this month</p>
           <p className="mt-2 text-[11px] text-muted-foreground">Your most consistent month yet</p>
+        </div>
+        <div className="rounded-2xl border border-indigo-100/80 bg-white p-6 cadence-shadow">
+          <div className="flex items-start justify-between">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><TrendingUp className="h-[18px] w-[18px]" /></span>
+            <span className="text-[11px] font-bold text-emerald-600">+1.2%</span>
+          </div>
+          <p className="mt-7 text-3xl font-extrabold tracking-[-0.05em] text-[#312E81]" data-testid="text-engagement-rate">4.8%</p>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground">Engagement rate</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">Across all published posts</p>
+        </div>
+        <div className="rounded-2xl border border-indigo-100/80 bg-white p-6 cadence-shadow">
+          <div className="flex items-start justify-between">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-primary"><Link2 className="h-[18px] w-[18px]" /></span>
+            <span className="rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-primary">Healthy</span>
+          </div>
+          <p className="mt-7 text-3xl font-extrabold tracking-[-0.05em] text-[#312E81]" data-testid="text-connected-count">3</p>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground">Connected accounts</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">Instagram, LinkedIn, and X</p>
+        </div>
+      </section>
+
+      <section className="mb-9 rounded-2xl bg-[#312E81] p-5 text-white shadow-[0_12px_30px_rgba(49,46,129,0.16)] sm:flex sm:items-center sm:justify-between sm:p-6" data-testid="card-plan-usage">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-amber-200" data-testid="status-plan">Starter</span>
+            <p className="text-xs font-semibold text-indigo-200">April posting allowance</p>
+          </div>
+          <div className="mt-3 flex items-end gap-2">
+            <p className="text-3xl font-extrabold tracking-[-0.05em]" data-testid="text-posts-used">10 of 10</p>
+            <p className="mb-1 text-xs text-indigo-200">posts used</p>
+          </div>
+        </div>
+        <div className="mt-4 w-full sm:mt-0 sm:max-w-[240px]">
+          <div className="h-2 overflow-hidden rounded-full bg-indigo-950/60" data-testid="progress-post-usage"><div className="h-full w-full rounded-full bg-[#FCD34D]" /></div>
+          <p className="mt-2 text-right text-[11px] text-indigo-200">Refreshes May 1, 2025</p>
         </div>
       </section>
 

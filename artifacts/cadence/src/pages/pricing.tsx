@@ -4,8 +4,8 @@ import { planFeatures } from '@/lib/cadence-data';
 
 const plans = [
   { name: 'Starter', price: '$0', description: 'A simple rhythm for getting started.', tone: 'quiet', cta: 'Current plan' },
-  { name: 'Pro', price: '$19', description: 'More room to build a consistent presence.', tone: 'featured', cta: 'View billing info' },
-  { name: 'Business', price: '$49', description: 'A shared workspace for growing teams.', tone: 'quiet', cta: 'View billing info' },
+  { name: 'Pro', price: '$29', description: 'More room to build a consistent presence.', tone: 'featured', cta: 'View billing info' },
+  { name: 'Business', price: '$79', description: 'A shared workspace for growing teams.', tone: 'quiet', cta: 'View billing info' },
 ] as const;
 
 export default function Pricing() {
