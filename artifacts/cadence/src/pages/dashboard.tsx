@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, CalendarDays, Check, ChevronRight, CircleAlert, Link2, Plus, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { Link } from 'wouter';
 import { PostCard } from '@/components/post-card';
 import { cadencePosts } from '@/lib/cadence-data';
@@ -8,13 +8,26 @@ export default function Dashboard() {
   const [showLimitMessage, setShowLimitMessage] = useState(false);
   const scheduledPosts = cadencePosts.filter((post) => post.status === 'Scheduled');
   const publishedPosts = cadencePosts.filter((post) => post.status === 'Published');
+  const now = new Date();
+  const today = new Intl.DateTimeFormat(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(now);
+  const greeting =
+    now.getHours() < 12
+      ? 'Good morning'
+      : now.getHours() < 18
+        ? 'Good afternoon'
+        : 'Good evening';
 
   return (
     <div className="mx-auto max-w-[1320px]">
       <section className="mb-12 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#C2410C]" data-testid="text-greeting-eyebrow">Friday, April 18, 2025</p>
-          <h1 className="text-[30px] font-extrabold tracking-[-0.05em] text-stone-900 sm:text-[36px]" data-testid="text-dashboard-heading">Good morning, Maya.</h1>
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#C2410C]" data-testid="text-greeting-eyebrow">{today}</p>
+          <h1 className="text-[30px] font-extrabold tracking-[-0.05em] text-stone-900 sm:text-[36px]" data-testid="text-dashboard-heading">{greeting}, Maya.</h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-stone-500" data-testid="text-dashboard-subheading">Your week is in a good rhythm. Here&apos;s what&apos;s ready to meet the world.</p>
         </div>
         <button type="button" onClick={() => setShowLimitMessage(true)} className="inline-flex w-fit items-center justify-center gap-2 rounded-[10px] bg-[#C2410C] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="button-schedule-new-post">
@@ -56,23 +69,6 @@ export default function Dashboard() {
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-stone-500">Connected accounts</p>
           <p className="mt-2 text-4xl font-extrabold tracking-[-0.05em] text-stone-900" data-testid="text-connected-count">3</p>
           <p className="mt-2 text-xs text-stone-400">Instagram, LinkedIn, and X</p>
-        </div>
-      </section>
-
-      <section className="mb-12 rounded-[10px] border border-stone-200 bg-white p-5 sm:flex sm:items-center sm:justify-between sm:p-7" data-testid="card-plan-usage">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-bold text-stone-600" data-testid="status-plan">Starter</span>
-            <p className="text-xs font-semibold text-stone-500">April posting allowance</p>
-          </div>
-          <div className="mt-3 flex items-end gap-2">
-            <p className="text-3xl font-extrabold tracking-[-0.05em] text-stone-900" data-testid="text-posts-used">10 of 10</p>
-            <p className="mb-1 text-xs text-stone-500">posts used</p>
-          </div>
-        </div>
-        <div className="mt-4 w-full sm:mt-0 sm:max-w-[240px]">
-          <div className="h-2 overflow-hidden rounded-full bg-stone-100" data-testid="progress-post-usage"><div className="h-full w-full rounded-full bg-[#C2410C]" /></div>
-          <p className="mt-2 text-right text-[11px] text-stone-500">Refreshes May 1, 2025</p>
         </div>
       </section>
 
