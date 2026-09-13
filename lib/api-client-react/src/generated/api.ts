@@ -283,6 +283,80 @@ export const useCreateBillingCheckout = <TError = ErrorType<unknown>,
       return useMutation(getCreateBillingCheckoutMutationOptions(options));
     }
 
+export const getResetBillingDemoUrl = () => {
+
+
+
+
+  return `/api/billing/demo-reset`
+}
+
+/**
+ * @summary Reset the seeded Cadence account for another sandbox billing demo
+ */
+export const resetBillingDemo = async ( options?: Parameters<typeof customFetch>[1]): Promise<BillingStatus> => {
+
+  return customFetch<BillingStatus>(getResetBillingDemoUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResetBillingDemoMutationKey = () => ['resetBillingDemo'] as const;
+
+export const getResetBillingDemoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetBillingDemo>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetBillingDemo>>, TError,void, TContext> => {
+
+const mutationKey = getResetBillingDemoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetBillingDemo>>, void> = () => {
+
+
+          return  resetBillingDemo(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetBillingDemoMutationResult = NonNullable<Awaited<ReturnType<typeof resetBillingDemo>>>
+
+    export type ResetBillingDemoMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Reset the seeded Cadence account for another sandbox billing demo
+ */
+export const useResetBillingDemo = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetBillingDemo>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resetBillingDemo>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getResetBillingDemoMutationOptions(options));
+    }
+
 export const getReceiveAirwallexWebhookUrl = () => {
 
 

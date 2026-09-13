@@ -50,6 +50,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingCheckout"
+  /billing/demo-reset:
+    post:
+      operationId: resetBillingDemo
+      tags: [billing]
+      summary: Reset the seeded Cadence account for another sandbox billing demo
+      responses:
+        "200":
+          description: Demo billing state reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
+        "404":
+          description: Demo reset is unavailable outside the sandbox
   /airwallex/webhooks:
     post:
       operationId: receiveAirwallexWebhook

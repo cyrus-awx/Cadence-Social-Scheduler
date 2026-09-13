@@ -38,6 +38,16 @@ export const CreateBillingCheckoutResponse = zod.object({
 
 
 /**
+ * @summary Reset the seeded Cadence account for another sandbox billing demo
+ */
+export const ResetBillingDemoResponse = zod.object({
+  "plan": zod.enum(['starter', 'pro']),
+  "status": zod.string(),
+  "currentPeriodEnd": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary Receive and verify Airwallex billing events
  */
 export const ReceiveAirwallexWebhookBody = zod.record(zod.string(), zod.unknown())

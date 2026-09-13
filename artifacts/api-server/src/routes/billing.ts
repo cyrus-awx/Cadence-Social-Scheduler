@@ -5,6 +5,7 @@ import {
   CreateBillingCheckoutResponse,
   GetBillingStatusResponse,
   ReceiveAirwallexWebhookResponse,
+  ResetBillingDemoResponse,
 } from "@workspace/api-zod";
 import {
   createProCheckout,
@@ -42,6 +43,42 @@ router.post("/billing/checkout", async (req, res): Promise<void> => {
     req.log.error({ err: error }, "Failed to create Airwallex checkout");
     res.status(502).json({ error: "Unable to start checkout right now" });
   }
+});
+
+router.post("/billing/demo-reset", async (_req, res): Promise<void> => {
+  if ((process.env.AIRWALLEX_ENVIRONMENT ?? "sandbox") !== "sandbox") {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  await db
+    .insert(cadenceBillingTable)
+    .values({
+      userKey: cadenceUserKey,
+      plan: "starter",
+      status: "inactive",
+      airwallexCustomerId: null,
+      airwallexSubscriptionId: null,
+      currentPeriodEnd: null,
+    })
+    .onConflictDoUpdate({
+      target: cadenceBillingTable.userKey,
+      set: {
+        plan: "starter",
+        status: "inactive",
+        airwallexCustomerId: null,
+        airwallexSubscriptionId: null,
+        currentPeriodEnd: null,
+      },
+    });
+
+  res.json(
+    ResetBillingDemoResponse.parse({
+      plan: "starter",
+      status: "inactive",
+      currentPeriodEnd: null,
+    }),
+  );
 });
 
 router.post("/airwallex/webhooks", async (req, res): Promise<void> => {

@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, Plus, Settings2, Sparkles } from 'lucide-react';
-import { useGetBillingStatus } from '@workspace/api-client-react';
+import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, LoaderCircle, Plus, RotateCcw, Settings2, Sparkles } from 'lucide-react';
+import { getGetBillingStatusQueryKey, useGetBillingStatus, useResetBillingDemo } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, testId: 'link-nav-dashboard' },
@@ -13,12 +14,29 @@ type CadenceShellProps = {
 };
 
 export function CadenceShell({ children }: CadenceShellProps) {
+  const queryClient = useQueryClient();
   const [location] = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const { data: billing } = useGetBillingStatus();
   const isPro = billing?.plan === 'pro';
   const route = location.split('?')[0];
+  const resetDemo = useResetBillingDemo({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: getGetBillingStatusQueryKey() });
+        setAccountOpen(false);
+        window.location.assign('/billing?upgrade=pro');
+      },
+    },
+  });
+
+  const handleDemoReset = () => {
+    const confirmed = window.confirm(
+      'Reset the sandbox billing demo to Starter and start a fresh checkout?',
+    );
+    if (confirmed) resetDemo.mutate();
+  };
 
   return (
     <div className="min-h-[100dvh] bg-background text-stone-900">
@@ -121,6 +139,16 @@ export function CadenceShell({ children }: CadenceShellProps) {
               {accountOpen && (
                 <div className="absolute right-0 top-11 w-48 rounded-[10px] border border-stone-200 bg-white p-2 shadow-sm" data-testid="panel-account-menu">
                   <Link href="/billing" className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-xs font-semibold text-stone-900 hover:bg-stone-50" data-testid="link-account-billing"><CreditCard className="h-4 w-4" /> Billing</Link>
+                   <button
+                     type="button"
+                     className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-left text-xs font-semibold text-stone-900 hover:bg-stone-50 disabled:cursor-wait disabled:opacity-60"
+                     onClick={handleDemoReset}
+                     disabled={resetDemo.isPending}
+                     data-testid="button-reset-billing-demo"
+                   >
+                     {resetDemo.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                     Reset demo
+                   </button>
                   <button type="button" className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-left text-xs font-semibold text-stone-500 hover:bg-stone-50" onClick={() => setAccountOpen(false)} data-testid="button-close-account-menu"><Settings2 className="h-4 w-4" /> Close menu</button>
                 </div>
               )}
