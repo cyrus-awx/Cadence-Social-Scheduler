@@ -9,7 +9,7 @@ export type CadencePost = {
   dateLabel: string;
   timeLabel: string;
   status: PostStatus;
-  color: 'indigo' | 'amber' | 'teal' | 'rose';
+  color: 'terracotta' | 'amber' | 'teal' | 'rose';
 };
 
 export const cadencePosts: CadencePost[] = [
@@ -41,7 +41,7 @@ export const cadencePosts: CadencePost[] = [
     dateLabel: 'Mon, Apr 21',
     timeLabel: '7:15 AM',
     status: 'Scheduled',
-    color: 'indigo',
+    color: 'terracotta',
   },
   {
     id: 'post-0416',
@@ -81,7 +81,7 @@ export const cadencePosts: CadencePost[] = [
     dateLabel: 'Tue, Apr 8',
     timeLabel: '7:30 AM',
     status: 'Published',
-    color: 'indigo',
+    color: 'terracotta',
   },
   {
     id: 'post-0405',

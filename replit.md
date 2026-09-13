@@ -43,7 +43,7 @@ A polished social media scheduling workspace for small businesses.
 
 ## User preferences
 
-- Cadence uses deep indigo `#4F46E5`, warm off-white `#FAFAF9`, Inter, rounded cards, soft shadows, and generous whitespace.
+- Cadence uses terracotta `#C2410C`, warm off-white `#FAFAF9`, Inter, 10px radii, hairline borders, and generous whitespace.
 
 ## Gotchas
 
