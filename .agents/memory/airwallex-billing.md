@@ -14,3 +14,9 @@ Airwallex catalog `request_id` values prevent reuse but do not safely replay the
 **Why:** Retrying a Product or Price creation with the same request ID is rejected for 48 hours rather than returning the resource.
 
 **How to apply:** List and reuse matching active Products and Prices before creating new ones; use a fresh request ID only for an actual create call.
+
+Treat verified server-side checkout reconciliation as the fallback when a browser reports success but webhook delivery is delayed or misconfigured.
+
+**Why:** Airwallex can complete and charge a Billing Checkout while the merchant UI remains on Starter if the notification URL has not delivered the subscription event.
+
+**How to apply:** While checkout is open, periodically retrieve that exact checkout ID from Airwallex. Activate only when its status is `COMPLETED`, mode is `SUBSCRIPTION`, its Cadence metadata matches the user, and it has a subscription ID.

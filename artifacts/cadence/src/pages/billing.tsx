@@ -3,6 +3,7 @@ import { ArrowRight, Check, CreditCard, LoaderCircle, LockKeyhole } from 'lucide
 import { Link } from 'wouter';
 import {
   getGetBillingStatusQueryKey,
+  syncBillingCheckout,
   useCreateBillingCheckout,
   useGetBillingStatus,
 } from '@workspace/api-client-react';
@@ -19,10 +20,33 @@ export default function Billing() {
       handler: (data: { code?: string; message?: string }) => void,
     ) => void;
   } | null>(null);
+  const currentCheckoutId = useRef<string | null>(null);
+  const syncInFlight = useRef(false);
   const autoStarted = useRef(false);
   const [checkoutError, setCheckoutError] = useState<string>();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { data: billing, isLoading, refetch } = useGetBillingStatus();
+
+  const reconcileCheckout = async (
+    checkoutId: string,
+    showDelayedMessage = false,
+  ) => {
+    if (syncInFlight.current) return;
+    syncInFlight.current = true;
+    try {
+      const status = await syncBillingCheckout(checkoutId);
+      queryClient.setQueryData(getGetBillingStatusQueryKey(), status);
+    } catch {
+      if (showDelayedMessage) {
+        setCheckoutError(
+          'Payment was submitted, but confirmation is delayed. Cadence will keep checking.',
+        );
+      }
+    } finally {
+      syncInFlight.current = false;
+    }
+  };
+
   const checkout = useCreateBillingCheckout({
     mutation: {
       onSuccess: async (data) => {
@@ -35,11 +59,12 @@ export default function Billing() {
             data.environment,
           );
           checkoutInstance.current = instance;
+          currentCheckoutId.current = data.checkoutId;
           if (!checkoutContainer.current) {
             throw new Error('Checkout container is unavailable');
           }
           instance.on('success', () => {
-            void refetch();
+            void reconcileCheckout(data.checkoutId, true);
           });
           instance.on('error', ({ message }) => {
             if (message) setCheckoutError(message);
@@ -78,7 +103,10 @@ export default function Billing() {
   useEffect(() => {
     if (!checkoutOpen) return;
     const interval = window.setInterval(() => {
-      void refetch();
+      const checkoutId = currentCheckoutId.current;
+      if (checkoutId) {
+        void reconcileCheckout(checkoutId);
+      }
     }, 4000);
     return () => window.clearInterval(interval);
   }, [checkoutOpen, refetch]);

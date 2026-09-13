@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import {
   createProCheckout,
+  verifyCompletedProCheckout,
   verifyAirwallexWebhook,
 } from "../lib/airwallex";
 
@@ -44,6 +45,54 @@ router.post("/billing/checkout", async (req, res): Promise<void> => {
     res.status(502).json({ error: "Unable to start checkout right now" });
   }
 });
+
+router.post(
+  "/billing/checkout/:checkoutId/sync",
+  async (req, res): Promise<void> => {
+    try {
+      const completed = await verifyCompletedProCheckout(
+        req.params.checkoutId,
+        cadenceUserKey,
+      );
+
+      if (completed) {
+        await db
+          .insert(cadenceBillingTable)
+          .values({
+            userKey: cadenceUserKey,
+            plan: "pro",
+            status: "active",
+            airwallexCustomerId: completed.customerId,
+            airwallexSubscriptionId: completed.subscriptionId,
+          })
+          .onConflictDoUpdate({
+            target: cadenceBillingTable.userKey,
+            set: {
+              plan: "pro",
+              status: "active",
+              airwallexCustomerId: completed.customerId,
+              airwallexSubscriptionId: completed.subscriptionId,
+            },
+          });
+      }
+
+      const [billing] = await db
+        .select()
+        .from(cadenceBillingTable)
+        .where(eq(cadenceBillingTable.userKey, cadenceUserKey));
+      res.json(
+        GetBillingStatusResponse.parse({
+          plan: billing?.plan === "pro" ? "pro" : "starter",
+          status: billing?.status ?? "inactive",
+          currentPeriodEnd: billing?.currentPeriodEnd?.toISOString() ?? null,
+        }),
+      );
+    } catch (error) {
+      req.log.error({ err: error }, "Failed to sync Airwallex checkout");
+      res.status(502).json({ error: "Unable to verify checkout right now" });
+    }
+  },
+);
 
 router.post("/billing/demo-reset", async (_req, res): Promise<void> => {
   if ((process.env.AIRWALLEX_ENVIRONMENT ?? "sandbox") !== "sandbox") {

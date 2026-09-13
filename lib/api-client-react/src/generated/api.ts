@@ -283,6 +283,80 @@ export const useCreateBillingCheckout = <TError = ErrorType<unknown>,
       return useMutation(getCreateBillingCheckoutMutationOptions(options));
     }
 
+export const getSyncBillingCheckoutUrl = (checkoutId: string,) => {
+
+
+
+
+  return `/api/billing/checkout/${checkoutId}/sync`
+}
+
+/**
+ * @summary Verify a completed checkout with Airwallex and sync the Cadence plan
+ */
+export const syncBillingCheckout = async (checkoutId: string, options?: Parameters<typeof customFetch>[1]): Promise<BillingStatus> => {
+
+  return customFetch<BillingStatus>(getSyncBillingCheckoutUrl(checkoutId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSyncBillingCheckoutMutationKey = () => ['syncBillingCheckout'] as const;
+
+export const getSyncBillingCheckoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncBillingCheckout>>, TError,SyncBillingCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncBillingCheckout>>, TError,SyncBillingCheckoutMutationVariables, TContext> => {
+
+const mutationKey = getSyncBillingCheckoutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncBillingCheckout>>, SyncBillingCheckoutMutationVariables> = (props) => {
+          const {checkoutId} = props ?? {};
+
+          return  syncBillingCheckout(checkoutId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncBillingCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof syncBillingCheckout>>>
+
+    export type SyncBillingCheckoutMutationError = ErrorType<unknown>
+    export type SyncBillingCheckoutMutationVariables = {checkoutId: string}
+
+    /**
+ * @summary Verify a completed checkout with Airwallex and sync the Cadence plan
+ */
+export const useSyncBillingCheckout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncBillingCheckout>>, TError,SyncBillingCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncBillingCheckout>>,
+        TError,
+        SyncBillingCheckoutMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSyncBillingCheckoutMutationOptions(options));
+    }
+
 export const getResetBillingDemoUrl = () => {
 
 

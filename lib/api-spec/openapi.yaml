@@ -50,6 +50,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingCheckout"
+  /billing/checkout/{checkoutId}/sync:
+    post:
+      operationId: syncBillingCheckout
+      tags: [billing]
+      summary: Verify a completed checkout with Airwallex and sync the Cadence plan
+      parameters:
+        - name: checkoutId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current billing status after reconciliation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
   /billing/demo-reset:
     post:
       operationId: resetBillingDemo

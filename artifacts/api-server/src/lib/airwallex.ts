@@ -193,6 +193,39 @@ export async function createProCheckout(userKey: string, returnUrl: string) {
   };
 }
 
+export async function verifyCompletedProCheckout(
+  checkoutId: string,
+  userKey: string,
+) {
+  const checkout = await airwallexGet(
+    `/api/v1/billing/billing_checkouts/${encodeURIComponent(checkoutId)}`,
+  );
+  const metadata = checkout.metadata as JsonRecord | undefined;
+  const subscriptionData = checkout.subscription_data as JsonRecord | undefined;
+  const subscriptionMetadata = subscriptionData?.metadata as JsonRecord | undefined;
+  const cadenceUserKey =
+    typeof metadata?.cadence_user_key === "string"
+      ? metadata.cadence_user_key
+      : subscriptionMetadata?.cadence_user_key;
+
+  if (
+    checkout.status !== "COMPLETED" ||
+    checkout.mode !== "SUBSCRIPTION" ||
+    cadenceUserKey !== userKey ||
+    typeof checkout.subscription_id !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    subscriptionId: checkout.subscription_id,
+    customerId:
+      typeof checkout.billing_customer_id === "string"
+        ? checkout.billing_customer_id
+        : null,
+  };
+}
+
 export function verifyAirwallexWebhook(
   timestamp: string,
   signature: string,

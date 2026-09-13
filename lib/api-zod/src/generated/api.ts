@@ -38,6 +38,20 @@ export const CreateBillingCheckoutResponse = zod.object({
 
 
 /**
+ * @summary Verify a completed checkout with Airwallex and sync the Cadence plan
+ */
+export const SyncBillingCheckoutParams = zod.object({
+  "checkoutId": zod.coerce.string()
+})
+
+export const SyncBillingCheckoutResponse = zod.object({
+  "plan": zod.enum(['starter', 'pro']),
+  "status": zod.string(),
+  "currentPeriodEnd": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary Reset the seeded Cadence account for another sandbox billing demo
  */
 export const ResetBillingDemoResponse = zod.object({
