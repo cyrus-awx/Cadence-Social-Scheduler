@@ -207,6 +207,21 @@ export default function Billing() {
             <>
               <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#C2410C]">Secure payment</p>
               <h2 className="mt-2 text-xl font-extrabold text-stone-900">Start Pro for $29/month</h2>
+               <div className="mt-5 rounded-[10px] border border-stone-200 bg-stone-50 p-4">
+                 <div className="flex flex-wrap items-center justify-between gap-3">
+                   <div>
+                     <p className="text-xs font-bold text-stone-900">Checkout powered by Airwallex</p>
+                     <p className="mt-1 text-[10px] text-stone-500">Available methods adapt to your device, region, and wallet setup.</p>
+                   </div>
+                   <div className="flex flex-wrap gap-1.5" aria-label="Supported payment methods">
+                     {['Apple Pay', 'G Pay', 'VISA', 'Mastercard', 'AMEX'].map((method) => (
+                       <span key={method} className="rounded-md border border-stone-200 bg-white px-2 py-1 text-[9px] font-extrabold tracking-tight text-stone-700 shadow-sm">
+                         {method}
+                       </span>
+                     ))}
+                   </div>
+                 </div>
+               </div>
                {!checkoutReady && <div className="mt-8 flex items-center justify-center py-10 text-stone-400"><Loader2 className="h-5 w-5 animate-spin" /></div>}
                <div id="airwallex-drop-in" className={checkoutReady ? 'mt-7 min-h-[320px]' : 'h-0 overflow-hidden'} />
                <p className="mt-4 flex items-center justify-center gap-2 text-center text-[11px] text-stone-500"><ShieldCheck className="h-3.5 w-3.5 shrink-0" />Cards and eligible wallets are encrypted and handled by Airwallex.</p>
