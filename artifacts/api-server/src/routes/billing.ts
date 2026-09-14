@@ -125,6 +125,18 @@ router.post("/billing/cancel", async (req, res) => {
   res.json(serialize(row));
 });
 
+router.post("/billing/reset-demo", async (req, res) => {
+  if (process.env.AIRWALLEX_ENV === "prod") {
+    res.status(403).json({ message: "Demo billing reset is unavailable in production." });
+    return;
+  }
+  const userId = getUserId(req, res);
+  await db
+    .delete(billingSubscriptionsTable)
+    .where(eq(billingSubscriptionsTable.userId, userId));
+  res.json(serialize());
+});
+
 router.post("/billing/checkout/:intentId/sync", async (req, res) => {
   const userId = getUserId(req, res);
   const [subscription] = await db

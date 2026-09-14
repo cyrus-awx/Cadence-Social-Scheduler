@@ -420,3 +420,71 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getSyncBillingCheckoutMutationOptions(options));
     }
 
+export const getResetDemoBillingUrl = () => {
+
+
+
+
+  return `/api/billing/reset-demo`
+}
+
+export const resetDemoBilling = async ( options?: Parameters<typeof customFetch>[1]): Promise<BillingStatus> => {
+
+  return customFetch<BillingStatus>(getResetDemoBillingUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResetDemoBillingMutationKey = () => ['resetDemoBilling'] as const;
+
+export const getResetDemoBillingMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetDemoBilling>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetDemoBilling>>, TError,void, TContext> => {
+
+const mutationKey = getResetDemoBillingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetDemoBilling>>, void> = () => {
+
+
+          return  resetDemoBilling(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetDemoBillingMutationResult = NonNullable<Awaited<ReturnType<typeof resetDemoBilling>>>
+
+    export type ResetDemoBillingMutationError = ErrorType<void>
+
+
+    export const useResetDemoBilling = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetDemoBilling>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resetDemoBilling>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getResetDemoBillingMutationOptions(options));
+    }
+

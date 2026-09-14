@@ -62,3 +62,12 @@ export const SyncBillingCheckoutResponse = zod.object({
 })
 
 
+export const ResetDemoBillingResponse = zod.object({
+  "plan": zod.enum(['starter', 'pro']),
+  "status": zod.enum(['inactive', 'pending', 'active', 'past_due', 'canceled']),
+  "cancelAtPeriodEnd": zod.boolean(),
+  "currentPeriodEnd": zod.coerce.date().nullable(),
+  "billingConfigured": zod.boolean()
+})
+
+

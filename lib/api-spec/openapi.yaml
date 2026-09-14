@@ -84,6 +84,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingStatus"
+  /billing/reset-demo:
+    post:
+      operationId: resetDemoBilling
+      tags: [billing]
+      responses:
+        "200":
+          description: Billing state reset to Starter for the current demo user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
+        "403":
+          description: Demo reset is unavailable in production
 components:
   schemas:
     HealthStatus:

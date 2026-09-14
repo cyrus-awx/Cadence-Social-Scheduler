@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, Plus, Settings2, Sparkles } from 'lucide-react';
+import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, Plus, RotateCcw, Settings2, Sparkles } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, testId: 'link-nav-dashboard' },
@@ -14,6 +14,7 @@ type CadenceShellProps = {
 
 export function CadenceShell({ children }: CadenceShellProps) {
   const [location] = useLocation();
+  const queryClient = useQueryClient();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const billingQuery = useQuery({
@@ -25,6 +26,24 @@ export function CadenceShell({ children }: CadenceShellProps) {
     },
   });
   const isPro = billingQuery.data?.plan === 'pro' && billingQuery.data.status === 'active';
+  const resetBilling = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/billing/reset-demo', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({})) as { message?: string };
+        throw new Error(payload.message ?? 'Could not reset demo billing');
+      }
+      return response.json() as Promise<{ plan: 'starter' | 'pro'; status: string }>;
+    },
+    onSuccess: (status) => {
+      queryClient.setQueryData(['billing-status'], status);
+      setAccountOpen(false);
+      window.location.assign('/billing');
+    },
+  });
 
   return (
     <div className="min-h-[100dvh] bg-background text-stone-900">
@@ -127,6 +146,16 @@ export function CadenceShell({ children }: CadenceShellProps) {
               {accountOpen && (
                 <div className="absolute right-0 top-11 w-48 rounded-[10px] border border-stone-200 bg-white p-2 shadow-sm" data-testid="panel-account-menu">
                   <Link href="/billing" className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-xs font-semibold text-stone-900 hover:bg-stone-50" data-testid="link-account-billing"><CreditCard className="h-4 w-4" /> Billing</Link>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-left text-xs font-semibold text-[#C2410C] hover:bg-[#C2410C]/5 disabled:cursor-wait disabled:opacity-60"
+                    onClick={() => resetBilling.mutate()}
+                    disabled={resetBilling.isPending}
+                    data-testid="button-reset-demo-billing"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    {resetBilling.isPending ? 'Resetting…' : 'Reset billing demo'}
+                  </button>
                   <button type="button" className="flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-left text-xs font-semibold text-stone-500 hover:bg-stone-50" onClick={() => setAccountOpen(false)} data-testid="button-close-account-menu"><Settings2 className="h-4 w-4" /> Close menu</button>
                 </div>
               )}
