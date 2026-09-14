@@ -5,7 +5,7 @@ description: Non-obvious Airwallex sandbox and Card Element behaviors that matte
 
 For Card Element scheduled consent, send only `next_triggered_by: merchant` and `merchant_trigger_reason: scheduled`; extra terms can make confirmation fail. Treat the SDK promise as submission, not proof of payment: retrieve the PaymentIntent server-side and require `SUCCEEDED`.
 
-Use Airwallex Drop-in, not a standalone Card Element, when Cadence should offer wallets. Keep a visible supported-method summary, but let Airwallex decide which methods are actionable.
+Use Airwallex Drop-in, not a standalone Card Element, when Cadence should offer wallets. Render the native Drop-in without a custom payment-method summary; let Airwallex decide which methods are actionable.
 
 Demo reset must preserve the Airwallex customer link while clearing local intent, consent, and subscription state. Customer creation must also tolerate Airwallex reporting that the deterministic customer already exists.
 
