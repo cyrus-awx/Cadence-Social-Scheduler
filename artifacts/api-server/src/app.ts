@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import pinoHttp from "pino-http";
@@ -38,5 +38,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.SESSION_SECRET));
 
 app.use("/api", router);
+
+app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
+  req.log.error({ err: error }, "request failed");
+  const message = error instanceof Error ? error.message : "Unexpected server error";
+  const status = message.includes("Insufficient permissions") ? 403 : 502;
+  res.status(status).json({
+    message: status === 403
+      ? "The Airwallex API key needs Payment Acceptance write permission."
+      : "The billing provider could not complete this request.",
+  });
+});
 
 export default app;
