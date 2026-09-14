@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: billing
+    description: Cadence subscription billing
 paths:
   /healthz:
     get:
@@ -24,6 +26,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /billing/status:
+    get:
+      operationId: getBillingStatus
+      tags: [billing]
+      responses:
+        "200":
+          description: Current subscription state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
+  /billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      tags: [billing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCheckoutRequest"
+      responses:
+        "200":
+          description: Airwallex checkout details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+        "503":
+          description: Billing is not configured
+  /billing/cancel:
+    post:
+      operationId: cancelBillingSubscription
+      tags: [billing]
+      responses:
+        "200":
+          description: Updated subscription state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +76,45 @@ components:
           type: string
       required:
         - status
+    BillingStatus:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [starter, pro]
+        status:
+          type: string
+          enum: [inactive, pending, active, past_due, canceled]
+        cancelAtPeriodEnd:
+          type: boolean
+        currentPeriodEnd:
+          type: [string, "null"]
+          format: date-time
+        billingConfigured:
+          type: boolean
+      required: [plan, status, cancelAtPeriodEnd, currentPeriodEnd, billingConfigured]
+    CreateCheckoutRequest:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [pro]
+      required: [plan]
+    CheckoutSession:
+      type: object
+      properties:
+        intentId:
+          type: string
+        clientSecret:
+          type: string
+        customerId:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: number
+        environment:
+          type: string
+          enum: [demo, prod]
+      required: [intentId, clientSecret, customerId, currency, amount, environment]
 

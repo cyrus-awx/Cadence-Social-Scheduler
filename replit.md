@@ -30,15 +30,15 @@ A polished social media scheduling workspace for small businesses.
 
 ## Architecture decisions
 
-- The first build is frontend-only with realistic seeded local data.
-- Billing and pricing are informational. Do not add payment processing, checkout, Stripe, or subscription logic unless explicitly requested later.
+- The dashboard and calendar use realistic seeded local data.
+- Pro billing uses an embedded Airwallex Card Element, server-owned pricing, signed webhooks, and PostgreSQL subscription state.
 
 ## Product
 
 - Dashboard summary and social post schedule for Maya Chen's coffee roastery
 - Monthly calendar of scheduled and published posts
 - Starter, Pro, and Business plan comparison
-- Empty billing status linking back to pricing
+- Airwallex-powered $29/month Pro upgrade and billing status
 - Starter scheduling limit state with an intentionally inert upgrade button
 
 ## User preferences
@@ -47,7 +47,7 @@ A polished social media scheduling workspace for small businesses.
 
 ## Gotchas
 
-- The “Upgrade to Pro” button shown after the post limit is reached must remain visually real but perform no action.
+- Billing requires `AIRWALLEX_CLIENT_ID`, `AIRWALLEX_API_KEY`, and `AIRWALLEX_WEBHOOK_SECRET`; `AIRWALLEX_ENV` is `demo` unless set to `prod`.
 
 ## Pointers
 

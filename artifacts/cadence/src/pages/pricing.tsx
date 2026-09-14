@@ -4,7 +4,7 @@ import { planFeatures } from '@/lib/cadence-data';
 
 const plans = [
   { name: 'Starter', price: '$0', description: 'A simple rhythm for getting started.', tone: 'quiet', cta: 'Current plan' },
-  { name: 'Pro', price: '$29', description: 'More room to build a consistent presence.', tone: 'featured', cta: 'View billing info' },
+  { name: 'Pro', price: '$29', description: 'More room to build a consistent presence.', tone: 'featured', cta: 'Upgrade to Pro' },
   { name: 'Business', price: '$79', description: 'A shared workspace for growing teams.', tone: 'quiet', cta: 'View billing info' },
 ] as const;
 
@@ -32,7 +32,7 @@ export default function Pricing() {
             {plan.name === 'Starter' ? (
               <button type="button" disabled className="mt-8 rounded-[10px] border border-stone-200 bg-stone-50 px-4 py-3 text-xs font-bold text-stone-400 disabled:cursor-not-allowed" data-testid="button-plan-starter">Current plan</button>
             ) : (
-              <Link href="/billing" className={`mt-8 rounded-[10px] px-4 py-3 text-center text-xs font-bold transition-colors ${plan.tone === 'featured' ? 'bg-white text-[#C2410C] hover:bg-stone-100' : 'border border-stone-200 text-[#C2410C] hover:bg-stone-50'}`} data-testid={`link-plan-${plan.name.toLowerCase()}`}>{plan.cta}</Link>
+              <Link href={plan.name === 'Pro' ? '/billing?upgrade=pro' : '/billing'} className={`mt-8 rounded-[10px] px-4 py-3 text-center text-xs font-bold transition-colors ${plan.tone === 'featured' ? 'bg-white text-[#C2410C] hover:bg-stone-100' : 'border border-stone-200 text-[#C2410C] hover:bg-stone-50'}`} data-testid={`link-plan-${plan.name.toLowerCase()}`}>{plan.cta}</Link>
             )}
           </article>
         ))}
