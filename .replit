@@ -23,6 +23,3 @@ timeoutMs = 20000
 
 [userenv.shared]
 AIRWALLEX_ENVIRONMENT = "sandbox"
-
-[nix]
-channel = "stable-25_05"

@@ -32,14 +32,14 @@ export default function Pricing() {
             {plan.name === 'Starter' ? (
               <button type="button" disabled className="mt-8 rounded-[10px] border border-stone-200 bg-stone-50 px-4 py-3 text-xs font-bold text-stone-400 disabled:cursor-not-allowed" data-testid="button-plan-starter">Current plan</button>
             ) : (
-              <Link href={plan.name === 'Pro' ? '/billing?upgrade=pro' : '/billing'} className={`mt-8 rounded-[10px] px-4 py-3 text-center text-xs font-bold transition-colors ${plan.tone === 'featured' ? 'bg-white text-[#C2410C] hover:bg-stone-100' : 'border border-stone-200 text-[#C2410C] hover:bg-stone-50'}`} data-testid={`link-plan-${plan.name.toLowerCase()}`}>{plan.name === 'Pro' ? 'Upgrade to Pro' : plan.cta}</Link>
+              <Link href="/billing" className={`mt-8 rounded-[10px] px-4 py-3 text-center text-xs font-bold transition-colors ${plan.tone === 'featured' ? 'bg-white text-[#C2410C] hover:bg-stone-100' : 'border border-stone-200 text-[#C2410C] hover:bg-stone-50'}`} data-testid={`link-plan-${plan.name.toLowerCase()}`}>{plan.cta}</Link>
             )}
           </article>
         ))}
       </div>
 
       <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-[10px] border border-stone-200 bg-white p-5 sm:flex-row sm:items-center sm:px-6" data-testid="status-pricing-note">
-        <div><p className="text-sm font-semibold text-stone-900">No contracts. No surprise invoices.</p><p className="mt-1 text-xs text-stone-500">Secure monthly billing is handled by Airwallex. Cancel before your next renewal.</p></div>
+        <div><p className="text-sm font-semibold text-stone-900">No contracts. No surprise invoices.</p><p className="mt-1 text-xs text-stone-500">This workspace is showing plan information only. Nothing changes without your say-so.</p></div>
         <Link href="/billing" className="shrink-0 text-xs font-bold text-[#C2410C] hover:text-[#9a340a]" data-testid="link-pricing-billing">See current billing status →</Link>
       </div>
     </div>

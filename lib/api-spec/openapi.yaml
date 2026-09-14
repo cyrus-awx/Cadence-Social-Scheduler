@@ -10,8 +10,6 @@ servers:
 tags:
   - name: health
     description: Health operations
-  - name: billing
-    description: Cadence subscription billing
 paths:
   /healthz:
     get:
@@ -26,80 +24,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-  /billing/status:
-    get:
-      operationId: getBillingStatus
-      tags: [billing]
-      summary: Get the current Cadence billing status
-      responses:
-        "200":
-          description: Current billing status
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BillingStatus"
-  /billing/checkout:
-    post:
-      operationId: createBillingCheckout
-      tags: [billing]
-      summary: Create an embedded Airwallex checkout for Cadence Pro
-      responses:
-        "201":
-          description: Checkout created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BillingCheckout"
-  /billing/checkout/{checkoutId}/sync:
-    post:
-      operationId: syncBillingCheckout
-      tags: [billing]
-      summary: Verify a completed checkout with Airwallex and sync the Cadence plan
-      parameters:
-        - name: checkoutId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Current billing status after reconciliation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BillingStatus"
-  /billing/demo-reset:
-    post:
-      operationId: resetBillingDemo
-      tags: [billing]
-      summary: Reset the seeded Cadence account for another sandbox billing demo
-      responses:
-        "200":
-          description: Demo billing state reset
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BillingStatus"
-        "404":
-          description: Demo reset is unavailable outside the sandbox
-  /airwallex/webhooks:
-    post:
-      operationId: receiveAirwallexWebhook
-      tags: [billing]
-      summary: Receive and verify Airwallex billing events
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AirwallexWebhookEvent"
-      responses:
-        "200":
-          description: Event accepted
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WebhookReceipt"
 components:
   schemas:
     HealthStatus:
@@ -109,36 +33,4 @@ components:
           type: string
       required:
         - status
-    BillingStatus:
-      type: object
-      properties:
-        plan:
-          type: string
-          enum: [starter, pro]
-        status:
-          type: string
-        currentPeriodEnd:
-          type: ["string", "null"]
-          format: date-time
-      required: [plan, status, currentPeriodEnd]
-    BillingCheckout:
-      type: object
-      properties:
-        checkoutId:
-          type: string
-        clientSecret:
-          type: string
-        environment:
-          type: string
-          enum: [demo, prod]
-      required: [checkoutId, clientSecret, environment]
-    AirwallexWebhookEvent:
-      type: object
-      additionalProperties: true
-    WebhookReceipt:
-      type: object
-      properties:
-        received:
-          type: boolean
-      required: [received]
 
