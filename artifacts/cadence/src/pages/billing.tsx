@@ -15,6 +15,7 @@ export default function Billing() {
   const checkoutContainer = useRef<HTMLDivElement>(null);
   const checkoutInstance = useRef<{
     unmount?: () => void;
+    destroy?: () => void;
     on?: (
       event: 'ready' | 'success' | 'error',
       handler: (data: { code?: string; message?: string }) => void,
@@ -95,7 +96,7 @@ export default function Billing() {
   useEffect(() => {
     if (billing?.plan === 'pro') {
       setCheckoutOpen(false);
-      checkoutInstance.current?.unmount?.();
+      currentCheckoutId.current = null;
       queryClient.invalidateQueries({ queryKey: getGetBillingStatusQueryKey() });
     }
   }, [billing?.plan, queryClient]);
@@ -113,7 +114,10 @@ export default function Billing() {
 
   useEffect(
     () => () => {
-      checkoutInstance.current?.unmount?.();
+      const instance = checkoutInstance.current;
+      checkoutInstance.current = null;
+      currentCheckoutId.current = null;
+      instance?.destroy?.();
     },
     [],
   );
@@ -128,8 +132,7 @@ export default function Billing() {
         <p className="mt-2 text-sm text-stone-500">Manage your Cadence subscription without leaving your workspace.</p>
       </section>
 
-      {checkoutOpen ? (
-        <section className="grid gap-6 lg:grid-cols-[320px_1fr]" data-testid="section-airwallex-checkout">
+      <section className={`${checkoutOpen ? 'grid' : 'hidden'} gap-6 lg:grid-cols-[320px_1fr]`} data-testid="section-airwallex-checkout">
           <aside className="h-fit rounded-[10px] border border-stone-200 bg-white p-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#C2410C]">Cadence Pro</p>
             <div className="mt-3 flex items-end gap-1">
@@ -150,8 +153,7 @@ export default function Billing() {
             <div id="airwallex-billing-checkout" ref={checkoutContainer} />
           </div>
         </section>
-      ) : (
-        <section className="rounded-[10px] border border-stone-200 bg-white p-6 sm:p-8" data-testid="card-subscription">
+        <section className={`${checkoutOpen ? 'hidden' : 'block'} rounded-[10px] border border-stone-200 bg-white p-6 sm:p-8`} data-testid="card-subscription">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-stone-100 text-[#C2410C]">
@@ -192,7 +194,6 @@ export default function Billing() {
             </Link>
           )}
         </section>
-      )}
     </div>
   );
 }

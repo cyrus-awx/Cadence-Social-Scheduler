@@ -1,6 +1,7 @@
 type AirwallexPaymentForm = {
   mount: (elementId: string) => void;
   unmount?: () => void;
+  destroy?: () => void;
   on: (
     event: "ready" | "success" | "error",
     handler: (data: { code?: string; message?: string }) => void,
