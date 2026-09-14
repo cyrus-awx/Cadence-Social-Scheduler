@@ -19,17 +19,18 @@ type CheckoutSession = {
   environment: 'demo' | 'prod';
 };
 
-type CardElement = {
+type DropInElement = {
   mount(id: string): void;
   unmount?(): void;
-  confirm(data: Record<string, unknown>): Promise<unknown>;
+  destroy?(): void;
+  on(event: 'ready' | 'success' | 'error', handler: (payload?: unknown) => void): void;
 };
 
 declare global {
   interface Window {
     AirwallexComponentsSDK?: {
       init(options: Record<string, unknown>): Promise<void>;
-      createElement(type: string, options: Record<string, unknown>): Promise<CardElement>;
+      createElement(type: string, options: Record<string, unknown>): Promise<DropInElement>;
     };
   }
 }
@@ -77,9 +78,9 @@ function getPaymentError(error: unknown) {
 export default function Billing() {
   const queryClient = useQueryClient();
   const [checkout, setCheckout] = useState<CheckoutSession | null>(null);
-  const [cardReady, setCardReady] = useState(false);
+  const [checkoutReady, setCheckoutReady] = useState(false);
   const [message, setMessage] = useState('');
-  const cardRef = useRef<CardElement | null>(null);
+  const dropInRef = useRef<DropInElement | null>(null);
 
   const statusQuery = useQuery({
     queryKey: ['billing-status'],
@@ -109,47 +110,60 @@ export default function Billing() {
       const sdk = window.AirwallexComponentsSDK;
       if (!sdk || disposed) return;
       await sdk.init({ env: checkout.environment, enabledElements: ['payments'] });
-      const element = await sdk.createElement('card', {
+       const element = await sdk.createElement('dropIn', {
         intent_id: checkout.intentId,
         client_secret: checkout.clientSecret,
         currency: checkout.currency,
-        style: {
-          base: { color: '#1c1917', fontSize: '14px', fontFamily: 'Inter, sans-serif' },
+         country_code: 'US',
+         mode: 'recurring',
+         payment_consent: {
+           next_triggered_by: 'merchant',
+           merchant_trigger_reason: 'scheduled',
         },
+         applePayRequestOptions: {
+           lineItems: [{
+             label: 'Cadence Pro',
+             amount: checkout.amount.toFixed(2),
+             type: 'final',
+             paymentTiming: 'recurring',
+             recurringPaymentStartDate: new Date(),
+             recurringPaymentIntervalUnit: 'month',
+             recurringPaymentIntervalCount: 1,
+           }],
+         },
       });
       if (disposed) return;
-      cardRef.current = element;
-      element.mount('airwallex-card');
-      setCardReady(true);
+       dropInRef.current = element;
+       element.mount('airwallex-drop-in');
+       element.on('ready', () => {
+         if (!disposed) setCheckoutReady(true);
+       });
+       element.on('success', () => {
+         if (disposed) return;
+         setMessage('Confirming your payment with Airwallex…');
+         void api<BillingStatus>(`/api/billing/checkout/${encodeURIComponent(checkout.intentId)}/sync`, { method: 'POST' })
+           .then((verified) => {
+             if (disposed) return;
+             queryClient.setQueryData(['billing-status'], verified);
+             setMessage(verified.status === 'active'
+               ? 'Payment confirmed. Pro is now active.'
+               : 'Airwallex is still processing this payment. Your plan will update when it is confirmed.');
+           })
+           .catch((error) => {
+             if (!disposed) setMessage(getPaymentError(error));
+           });
+       });
+       element.on('error', (error) => {
+         if (!disposed) setMessage(getPaymentError(error));
+       });
     })().catch((error) => setMessage(error instanceof Error ? error.message : 'Could not load checkout.'));
     return () => {
       disposed = true;
-      cardRef.current?.unmount?.();
-      cardRef.current = null;
+       dropInRef.current?.unmount?.();
+       dropInRef.current?.destroy?.();
+       dropInRef.current = null;
     };
-  }, [checkout]);
-
-  const confirmPayment = async () => {
-    if (!checkout || !cardRef.current) return;
-    setMessage('');
-    try {
-      await cardRef.current.confirm({
-        intent_id: checkout.intentId,
-        client_secret: checkout.clientSecret,
-        payment_consent: {
-          next_triggered_by: 'merchant',
-          merchant_trigger_reason: 'scheduled',
-        },
-      });
-      const verified = await api<BillingStatus>(`/api/billing/checkout/${encodeURIComponent(checkout.intentId)}/sync`, { method: 'POST' });
-      queryClient.setQueryData(['billing-status'], verified);
-      setMessage(verified.status === 'active'
-        ? 'Payment confirmed. Pro is now active.'
-        : 'Airwallex is still processing this payment. Your plan will update when it is confirmed.');
-    } catch (error) {
-      setMessage(getPaymentError(error));
-    }
-  };
+   }, [checkout, queryClient]);
 
   const status = statusQuery.data;
   const active = status?.status === 'active';
@@ -193,9 +207,9 @@ export default function Billing() {
             <>
               <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#C2410C]">Secure payment</p>
               <h2 className="mt-2 text-xl font-extrabold text-stone-900">Start Pro for $29/month</h2>
-              <div id="airwallex-card" className="mt-7 min-h-14 rounded-[10px] border border-stone-200 px-3 py-4" />
-              <button disabled={!cardReady} onClick={confirmPayment} className="mt-5 inline-flex w-full items-center justify-center rounded-[10px] bg-[#C2410C] px-5 py-3 text-sm font-bold text-white hover:bg-[#9a340a] disabled:opacity-50">{cardReady ? 'Pay $29 and start Pro' : <Loader2 className="h-4 w-4 animate-spin" />}</button>
-              <p className="mt-4 flex items-center justify-center gap-2 text-[11px] text-stone-500"><ShieldCheck className="h-3.5 w-3.5" />Card details are encrypted and handled by Airwallex.</p>
+               {!checkoutReady && <div className="mt-8 flex items-center justify-center py-10 text-stone-400"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+               <div id="airwallex-drop-in" className={checkoutReady ? 'mt-7 min-h-[320px]' : 'h-0 overflow-hidden'} />
+               <p className="mt-4 flex items-center justify-center gap-2 text-center text-[11px] text-stone-500"><ShieldCheck className="h-3.5 w-3.5 shrink-0" />Cards and eligible wallets are encrypted and handled by Airwallex.</p>
             </>
           )}
           {message && <p className="mt-5 rounded-[10px] bg-stone-100 p-3 text-xs leading-relaxed text-stone-700">{message}</p>}
