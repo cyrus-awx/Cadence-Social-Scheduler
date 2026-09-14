@@ -1,0 +1,1 @@
+- [Airwallex card checkout validation](airwallex-card-checkout.md) — scheduled Card Element consent needs minimal fields and server-side SUCCEEDED verification.

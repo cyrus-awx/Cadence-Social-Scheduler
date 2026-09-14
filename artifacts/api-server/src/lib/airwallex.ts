@@ -46,6 +46,18 @@ async function post(path: string, body: AirwallexJson) {
   return payload;
 }
 
+async function get(path: string) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    headers: { Authorization: `Bearer ${await getAccessToken()}` },
+  });
+  const payload = (await response.json()) as AirwallexJson;
+  if (!response.ok) {
+    const message = typeof payload.message === "string" ? payload.message : "Airwallex request failed";
+    throw new Error(`${message} (${response.status})`);
+  }
+  return payload;
+}
+
 export function isAirwallexConfigured() {
   return Boolean(process.env.AIRWALLEX_CLIENT_ID && process.env.AIRWALLEX_API_KEY);
 }
@@ -71,4 +83,8 @@ export async function createProPaymentIntent(input: {
     return_url: input.returnUrl,
     metadata: { cadence_user_id: input.userId, cadence_plan: "pro" },
   });
+}
+
+export function retrievePaymentIntent(intentId: string) {
+  return get(`/api/v1/pa/payment_intents/${encodeURIComponent(intentId)}`);
 }

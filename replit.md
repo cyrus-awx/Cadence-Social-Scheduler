@@ -48,6 +48,7 @@ A polished social media scheduling workspace for small businesses.
 ## Gotchas
 
 - Billing requires `AIRWALLEX_CLIENT_ID`, `AIRWALLEX_API_KEY`, and `AIRWALLEX_WEBHOOK_SECRET`; `AIRWALLEX_ENV` is `demo` unless set to `prod`.
+- Airwallex Card Element scheduled consent confirmation should send `next_triggered_by: merchant` and `merchant_trigger_reason: scheduled` without custom terms.
 
 ## Pointers
 

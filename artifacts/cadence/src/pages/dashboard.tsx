@@ -42,7 +42,7 @@ export default function Dashboard() {
             <p className="text-sm font-semibold text-stone-900">You&apos;ve used all 10 posts on Starter. Upgrade to keep scheduling.</p>
             <p className="mt-1 text-xs text-stone-500">Your current posts will stay published and on schedule.</p>
           </div>
-          <button type="button" className="shrink-0 rounded-[10px] bg-[#C2410C] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9a340a]" onClick={() => undefined} data-testid="button-upgrade-pro">Upgrade to Pro</button>
+          <Link href="/billing?upgrade=pro" className="shrink-0 rounded-[10px] bg-[#C2410C] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="button-upgrade-pro">Upgrade to Pro</Link>
         </div>
       )}
 

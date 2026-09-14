@@ -49,3 +49,16 @@ export const CancelBillingSubscriptionResponse = zod.object({
 })
 
 
+export const SyncBillingCheckoutParams = zod.object({
+  "intentId": zod.coerce.string()
+})
+
+export const SyncBillingCheckoutResponse = zod.object({
+  "plan": zod.enum(['starter', 'pro']),
+  "status": zod.enum(['inactive', 'pending', 'active', 'past_due', 'canceled']),
+  "cancelAtPeriodEnd": zod.boolean(),
+  "currentPeriodEnd": zod.coerce.date().nullable(),
+  "billingConfigured": zod.boolean()
+})
+
+

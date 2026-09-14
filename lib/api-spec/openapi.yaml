@@ -67,6 +67,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingStatus"
+  /billing/checkout/{intentId}/sync:
+    post:
+      operationId: syncBillingCheckout
+      tags: [billing]
+      parameters:
+        - in: path
+          name: intentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Server-verified subscription state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
 components:
   schemas:
     HealthStatus:

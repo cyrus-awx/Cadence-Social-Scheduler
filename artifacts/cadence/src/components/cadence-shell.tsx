@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, Plus, Settings2, Sparkles } from 'lucide-react';
 
@@ -15,6 +16,15 @@ export function CadenceShell({ children }: CadenceShellProps) {
   const [location] = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const billingQuery = useQuery({
+    queryKey: ['billing-status'],
+    queryFn: async () => {
+      const response = await fetch('/api/billing/status', { credentials: 'include' });
+      if (!response.ok) throw new Error('Could not load billing status');
+      return response.json() as Promise<{ plan: 'starter' | 'pro'; status: string }>;
+    },
+  });
+  const isPro = billingQuery.data?.plan === 'pro' && billingQuery.data.status === 'active';
 
   return (
     <div className="min-h-[100dvh] bg-background text-stone-900">
@@ -68,16 +78,16 @@ export function CadenceShell({ children }: CadenceShellProps) {
 
         <div className="mt-auto rounded-[10px] border border-stone-200 bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-stone-600">Starter plan</span>
-            <span className="rounded-full bg-[#C2410C]/10 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">10 / 10</span>
+            <span className="text-[11px] font-semibold text-stone-600">{isPro ? 'Pro plan' : 'Starter plan'}</span>
+            <span className="rounded-full bg-[#C2410C]/10 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">{isPro ? 'Active' : '10 / 10'}</span>
           </div>
           <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
-            <div className="h-full w-full rounded-full bg-[#C2410C]" />
+            <div className={`h-full rounded-full bg-[#C2410C] ${isPro ? 'w-1/4' : 'w-full'}`} />
           </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-stone-500">You&apos;re at your monthly limit.</p>
-          <Link href="/pricing" className="flex items-center justify-center gap-2 rounded-[10px] border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-bold text-stone-900 transition-colors hover:bg-stone-100" data-testid="link-sidebar-upgrade">
+          <p className="mb-3 text-[11px] leading-relaxed text-stone-500">{isPro ? 'Unlimited scheduling is enabled.' : 'You’re at your monthly limit.'}</p>
+          <Link href={isPro ? '/billing' : '/pricing'} className="flex items-center justify-center gap-2 rounded-[10px] border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-bold text-stone-900 transition-colors hover:bg-stone-100" data-testid="link-sidebar-upgrade">
             <Sparkles className="h-3.5 w-3.5" />
-            See Pro
+            {isPro ? 'Manage plan' : 'See Pro'}
           </Link>
         </div>
       </aside>

@@ -352,3 +352,71 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCancelBillingSubscriptionMutationOptions(options));
     }
 
+export const getSyncBillingCheckoutUrl = (intentId: string,) => {
+
+
+
+
+  return `/api/billing/checkout/${intentId}/sync`
+}
+
+export const syncBillingCheckout = async (intentId: string, options?: Parameters<typeof customFetch>[1]): Promise<BillingStatus> => {
+
+  return customFetch<BillingStatus>(getSyncBillingCheckoutUrl(intentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSyncBillingCheckoutMutationKey = () => ['syncBillingCheckout'] as const;
+
+export const getSyncBillingCheckoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncBillingCheckout>>, TError,SyncBillingCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncBillingCheckout>>, TError,SyncBillingCheckoutMutationVariables, TContext> => {
+
+const mutationKey = getSyncBillingCheckoutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncBillingCheckout>>, SyncBillingCheckoutMutationVariables> = (props) => {
+          const {intentId} = props ?? {};
+
+          return  syncBillingCheckout(intentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncBillingCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof syncBillingCheckout>>>
+
+    export type SyncBillingCheckoutMutationError = ErrorType<unknown>
+    export type SyncBillingCheckoutMutationVariables = {intentId: string}
+
+    export const useSyncBillingCheckout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncBillingCheckout>>, TError,SyncBillingCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncBillingCheckout>>,
+        TError,
+        SyncBillingCheckoutMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSyncBillingCheckoutMutationOptions(options));
+    }
+

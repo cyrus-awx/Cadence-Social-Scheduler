@@ -64,6 +64,16 @@ function loadAirwallex() {
   });
 }
 
+function getPaymentError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null) {
+    const details = error as { message?: unknown; error?: { message?: unknown } };
+    if (typeof details.message === 'string') return details.message;
+    if (typeof details.error?.message === 'string') return details.error.message;
+  }
+  return 'Payment could not be completed. Check the card details and try again.';
+}
+
 export default function Billing() {
   const queryClient = useQueryClient();
   const [checkout, setCheckout] = useState<CheckoutSession | null>(null);
@@ -74,7 +84,7 @@ export default function Billing() {
   const statusQuery = useQuery({
     queryKey: ['billing-status'],
     queryFn: () => api<BillingStatus>('/api/billing/status'),
-    refetchInterval: (query) => query.state.data?.status === 'pending' ? 2000 : false,
+    refetchInterval: (query) => query.state.data?.status === 'pending' ? 5000 : false,
   });
 
   const checkoutMutation = useMutation({
@@ -126,25 +136,18 @@ export default function Billing() {
       await cardRef.current.confirm({
         intent_id: checkout.intentId,
         client_secret: checkout.clientSecret,
-        customer_id: checkout.customerId,
         payment_consent: {
           next_triggered_by: 'merchant',
           merchant_trigger_reason: 'scheduled',
-          terms_of_use: {
-            payment_amount_type: 'FIXED',
-            payment_currency: 'USD',
-            fixed_payment_amount: 29,
-            start_date: new Date().toISOString().slice(0, 10),
-            payment_schedule: { period: 1, period_unit: 'MONTH' },
-            billing_cycle_charge_day: new Date().getUTCDate(),
-          },
         },
-        payment_method_options: { card: { authorization_type: 'final_auth', auto_capture: true } },
       });
-      setMessage('Payment submitted. We’ll activate Pro as soon as Airwallex confirms it.');
-      await queryClient.invalidateQueries({ queryKey: ['billing-status'] });
+      const verified = await api<BillingStatus>(`/api/billing/checkout/${encodeURIComponent(checkout.intentId)}/sync`, { method: 'POST' });
+      queryClient.setQueryData(['billing-status'], verified);
+      setMessage(verified.status === 'active'
+        ? 'Payment confirmed. Pro is now active.'
+        : 'Airwallex is still processing this payment. Your plan will update when it is confirmed.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Payment could not be completed.');
+      setMessage(getPaymentError(error));
     }
   };
 

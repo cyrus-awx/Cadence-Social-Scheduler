@@ -10,6 +10,7 @@ import {
   createCustomer,
   createProPaymentIntent,
   isAirwallexConfigured,
+  retrievePaymentIntent,
 } from "../lib/airwallex";
 
 const router = Router();
@@ -122,6 +123,56 @@ router.post("/billing/cancel", async (req, res) => {
     ))
     .returning();
   res.json(serialize(row));
+});
+
+router.post("/billing/checkout/:intentId/sync", async (req, res) => {
+  const userId = getUserId(req, res);
+  const [subscription] = await db
+    .select()
+    .from(billingSubscriptionsTable)
+    .where(and(
+      eq(billingSubscriptionsTable.userId, userId),
+      eq(billingSubscriptionsTable.airwallexPaymentIntentId, req.params.intentId),
+    ))
+    .limit(1);
+  if (!subscription) {
+    res.status(404).json({ message: "Checkout session not found." });
+    return;
+  }
+
+  const intent = await retrievePaymentIntent(req.params.intentId);
+  const providerStatus = typeof intent.status === "string" ? intent.status : "";
+  const consentId = typeof intent.payment_consent_id === "string"
+    ? intent.payment_consent_id
+    : undefined;
+  let nextStatus = subscription.status;
+  let plan = subscription.plan;
+  let currentPeriodEnd = subscription.currentPeriodEnd;
+  let lastPaymentError = subscription.lastPaymentError;
+
+  if (providerStatus === "SUCCEEDED") {
+    nextStatus = "active";
+    plan = "pro";
+    currentPeriodEnd = new Date(Date.now() + MONTH_MS);
+    lastPaymentError = null;
+  } else if (["CANCELLED", "FAILED"].includes(providerStatus)) {
+    nextStatus = providerStatus === "CANCELLED" ? "canceled" : "past_due";
+    lastPaymentError = providerStatus;
+  }
+
+  const [updated] = await db
+    .update(billingSubscriptionsTable)
+    .set({
+      plan,
+      status: nextStatus,
+      currentPeriodEnd,
+      airwallexPaymentConsentId: consentId ?? subscription.airwallexPaymentConsentId,
+      lastPaymentError,
+      updatedAt: new Date(),
+    })
+    .where(eq(billingSubscriptionsTable.userId, userId))
+    .returning();
+  res.json(serialize(updated));
 });
 
 type AirwallexEvent = {
