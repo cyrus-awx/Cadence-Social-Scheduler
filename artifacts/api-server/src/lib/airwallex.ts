@@ -69,8 +69,15 @@ export async function createCustomer(userId: string) {
       merchant_customer_id: userId,
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("already exists")) {
-      return { id: userId };
+    if (
+      !isProduction &&
+      error instanceof Error &&
+      error.message.includes("already exists")
+    ) {
+      return post("/api/v1/pa/customers/create", {
+        request_id: randomUUID(),
+        merchant_customer_id: `${userId}-d-${randomUUID().slice(0, 8)}`,
+      });
     }
     throw error;
   }
