@@ -131,10 +131,21 @@ router.post("/billing/reset-demo", async (req, res) => {
     return;
   }
   const userId = getUserId(req, res);
-  await db
-    .delete(billingSubscriptionsTable)
-    .where(eq(billingSubscriptionsTable.userId, userId));
-  res.json(serialize());
+  const [reset] = await db
+    .update(billingSubscriptionsTable)
+    .set({
+      plan: "starter",
+      status: "inactive",
+      airwallexPaymentIntentId: null,
+      airwallexPaymentConsentId: null,
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: null,
+      lastPaymentError: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(billingSubscriptionsTable.userId, userId))
+    .returning();
+  res.json(serialize(reset));
 });
 
 router.post("/billing/checkout/:intentId/sync", async (req, res) => {

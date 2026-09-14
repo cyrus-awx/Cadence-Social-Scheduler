@@ -63,10 +63,17 @@ export function isAirwallexConfigured() {
 }
 
 export async function createCustomer(userId: string) {
-  return post("/api/v1/pa/customers/create", {
-    request_id: randomUUID(),
-    merchant_customer_id: userId,
-  });
+  try {
+    return await post("/api/v1/pa/customers/create", {
+      request_id: randomUUID(),
+      merchant_customer_id: userId,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("already exists")) {
+      return { id: userId };
+    }
+    throw error;
+  }
 }
 
 export async function createProPaymentIntent(input: {
