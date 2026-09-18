@@ -9,6 +9,18 @@ const app: Express = express();
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET is required.");
 }
+app.disable("x-powered-by");
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=()",
+  );
+  next();
+});
 
 app.use(
   pinoHttp({
