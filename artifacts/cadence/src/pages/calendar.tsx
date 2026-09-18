@@ -1,18 +1,17 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Clock3, Plus } from 'lucide-react';
-import { Link } from 'wouter';
+import { ChevronLeft, ChevronRight, Clock3 } from 'lucide-react';
 import { PlatformIcon } from '@/components/platform-icon';
-import { cadencePosts } from '@/lib/cadence-data';
+import { cadencePosts, getDemoCalendarWeeks } from '@/lib/cadence-data';
 
 type CalendarCell = { day: number; outside?: boolean; today?: boolean };
 
-const weeks: CalendarCell[][] = [
-  [{ day: 30, outside: true }, { day: 31, outside: true }, { day: 1 }, { day: 2 }, { day: 3 }, { day: 4 }, { day: 5 }],
-  [{ day: 6 }, { day: 7 }, { day: 8 }, { day: 9 }, { day: 10 }, { day: 11 }, { day: 12 }],
-  [{ day: 13 }, { day: 14 }, { day: 15 }, { day: 16 }, { day: 17 }, { day: 18, today: true }, { day: 19 }],
-  [{ day: 20 }, { day: 21 }, { day: 22 }, { day: 23 }, { day: 24 }, { day: 25 }, { day: 26 }],
-  [{ day: 27 }, { day: 28 }, { day: 29 }, { day: 30 }, { day: 1, outside: true }, { day: 2, outside: true }, { day: 3, outside: true }],
-];
+const weeks: CalendarCell[][] = getDemoCalendarWeeks(0).map((week, weekIndex) =>
+  week.map((day, dayIndex) => ({
+    day,
+    outside: (weekIndex === 0 && dayIndex < 2) || (weekIndex === 4 && dayIndex > 3),
+    today: day === 18 && weekIndex === 2,
+  })),
+);
 
 function postForDay(day: number) {
   return cadencePosts.find((post) => Number(post.scheduledFor.slice(-2)) === day);
@@ -28,12 +27,12 @@ export default function Calendar() {
       <section className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#C2410C]">Planning view</p>
-          <h1 className="text-[30px] font-extrabold tracking-[-0.05em] text-stone-900 sm:text-[36px]" data-testid="text-calendar-heading">Your content calendar</h1>
-          <p className="mt-2 text-sm text-stone-500">A clear view of what&apos;s brewing and when it goes live.</p>
+          <h1 className="text-[30px] font-extrabold tracking-[-0.05em] text-stone-900 sm:text-[36px]" data-testid="text-calendar-heading">Sample content calendar</h1>
+          <p className="mt-2 text-sm text-stone-500">A fictional view of scheduled and published content. Nothing will go live.</p>
         </div>
-        <Link href="/dashboard" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-[#C2410C] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#9a340a] sm:w-fit" data-testid="button-calendar-schedule">
-          <Plus className="h-4 w-4" /> Schedule a post
-        </Link>
+        <p className="rounded-[10px] border border-stone-200 bg-white px-4 py-3 text-xs font-semibold text-stone-600">
+          Read-only sample calendar · April 2025
+        </p>
       </section>
 
       <div className="overflow-hidden rounded-[10px] border border-stone-200 bg-white">
@@ -90,9 +89,8 @@ export default function Calendar() {
         ) : (
           <div className="flex min-h-[480px] flex-col items-center justify-center px-6 text-center" data-testid="empty-calendar-month">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[10px] bg-stone-100 text-[#C2410C]"><Clock3 className="h-5 w-5" /></div>
-            <h2 className="text-base font-bold text-stone-900">A quiet month so far</h2>
-            <p className="mt-1 max-w-xs text-sm leading-relaxed text-stone-500">Nothing is scheduled for {monthLabel}. Your next content moment can start here.</p>
-            <Link href="/dashboard" className="mt-6 rounded-[10px] bg-[#C2410C] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="link-empty-calendar-schedule">Go to overview</Link>
+            <h2 className="text-base font-bold text-stone-900">No sample content</h2>
+            <p className="mt-1 max-w-xs text-sm leading-relaxed text-stone-500">This read-only demo has no fictional entries for {monthLabel}.</p>
           </div>
         )}
       </div>

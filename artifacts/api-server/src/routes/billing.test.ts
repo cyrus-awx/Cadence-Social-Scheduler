@@ -8,9 +8,6 @@ type Subscription = {
   status: string;
   airwallexCustomerId: string | null;
   airwallexPaymentIntentId: string | null;
-  airwallexPaymentConsentId: string | null;
-  cancelAtPeriodEnd: boolean;
-  currentPeriodEnd: Date | null;
   lastPaymentError: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +20,7 @@ const state = vi.hoisted(() => ({
   providerIntents: new Map<string, Record<string, unknown>>(),
   transactionTail: Promise.resolve(),
   failNextSubscriptionSave: false,
+  webhookSubscriptionUpdates: 0,
 }));
 
 const airwallex = vi.hoisted(() => ({
@@ -80,9 +78,6 @@ vi.mock("@workspace/db", async () => {
             status: "inactive",
             airwallexCustomerId: null,
             airwallexPaymentIntentId: null,
-            airwallexPaymentConsentId: null,
-            cancelAtPeriodEnd: false,
-            currentPeriodEnd: null,
             lastPaymentError: null,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -100,9 +95,13 @@ vi.mock("@workspace/db", async () => {
             const row = state.subscriptions.get(values.userId as string)!;
             state.subscriptions.set(row.userId, { ...row, ...set });
           },
-          onConflictDoNothing: async () => {
-            if (!state.webhookEvents.has(values.id as string)) write();
-          },
+          onConflictDoNothing: () => ({
+            returning: async () => {
+              if (state.webhookEvents.has(values.id as string)) return [];
+              write();
+              return [{ id: values.id as string }];
+            },
+          }),
         };
       },
     }),
@@ -113,6 +112,7 @@ vi.mock("@workspace/db", async () => {
             if (table !== schema.billingSubscriptionsTable) return undefined;
             const row = firstSubscription();
             if (!row) return undefined;
+            if ("plan" in set && set.plan === "pro") state.webhookSubscriptionUpdates += 1;
             const updated = { ...row, ...set };
             state.subscriptions.set(row.userId, updated);
             return updated;
@@ -150,7 +150,6 @@ let app: Awaited<typeof import("../app")>["default"];
 beforeAll(async () => {
   process.env.SESSION_SECRET = "billing-test-session-secret";
   process.env.AIRWALLEX_WEBHOOK_SECRET = "billing-test-webhook-secret";
-  process.env.AIRWALLEX_ENV = "demo";
   app = (await import("../app")).default;
 });
 
@@ -161,11 +160,16 @@ beforeEach(() => {
   state.providerIntents.clear();
   state.transactionTail = Promise.resolve();
   state.failNextSubscriptionSave = false;
+  state.webhookSubscriptionUpdates = 0;
   vi.clearAllMocks();
 });
 
+function sameOriginPost(agent: ReturnType<typeof request.agent>, path: string) {
+  return agent.post(path).set("sec-fetch-site", "same-origin");
+}
+
 async function startCheckout(agent: ReturnType<typeof request.agent>) {
-  return agent.post("/api/billing/checkout").send({ plan: "pro" });
+  return sameOriginPost(agent, "/api/billing/checkout").send({ plan: "pro" });
 }
 
 function signedWebhook(event: Record<string, unknown>) {
@@ -186,7 +190,7 @@ function signedWebhook(event: Record<string, unknown>) {
 const successfulWebhookEvent = {
   id: "evt_success",
   name: "payment_intent.succeeded",
-  data: { object: { id: "int_1", payment_consent_id: "consent_1" } },
+  data: { object: { id: "int_1" } },
 };
 
 function expectPendingStarterSubscription() {
@@ -194,13 +198,142 @@ function expectPendingStarterSubscription() {
     plan: "starter",
     status: "pending",
     airwallexPaymentIntentId: "int_1",
-    airwallexPaymentConsentId: null,
-    currentPeriodEnd: null,
   });
   expect(state.webhookEvents.size).toBe(0);
 }
 
 describe("billing regression flow", () => {
+  it("rejects cookie-authenticated POSTs from another origin while allowing webhooks", async () => {
+    const response = await request(app)
+      .post("/api/billing/reset-demo")
+      .set("origin", "https://attacker.example");
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ message: "Requests must come from this site." });
+
+    const webhook = await signedWebhook({
+      id: "evt_cross_origin",
+      name: "payment_intent.payment_failed",
+      data: { object: { id: "missing" } },
+    });
+    expect(webhook.status).toBe(200);
+    expect(webhook.text).toBe("ok");
+  });
+
+  it("rejects cookie-authenticated POSTs when origin evidence is missing", async () => {
+    const response = await request(app).post("/api/billing/reset-demo");
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ message: "Requests must come from this site." });
+  });
+
+  it("accepts same-origin cookie-authenticated POSTs", async () => {
+    const agent = request.agent(app);
+    const response = await agent
+      .post("/api/billing/reset-demo")
+      .set("sec-fetch-site", "same-origin");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ plan: "starter", status: "inactive" });
+  });
+
+  it("rejects same-site requests that are not same-origin", async () => {
+    const response = await request(app)
+      .post("/api/billing/reset-demo")
+      .set("sec-fetch-site", "same-site");
+
+    expect(response.status).toBe(403);
+  });
+
+  it("creates one-time Pro checkout metadata and exposes no recurring fields", async () => {
+    const agent = request.agent(app);
+    const checkout = await startCheckout(agent);
+
+    expect(checkout.status).toBe(200);
+    expect(checkout.body).toEqual({
+      intentId: "int_1",
+      clientSecret: "secret_int_1",
+      customerId: "cus_demo",
+      currency: "USD",
+      amount: 29,
+      environment: "demo",
+    });
+    expect(airwallex.createProPaymentIntent).toHaveBeenCalledWith({
+      userId: expect.any(String),
+      customerId: "cus_demo",
+      idempotencyKey: expect.any(String),
+    });
+    const stored = state.subscriptions.values().next().value;
+    expect(stored).not.toHaveProperty("cancelAtPeriodEnd");
+    expect(stored).not.toHaveProperty("currentPeriodEnd");
+    expect(stored).not.toHaveProperty("airwallexPaymentConsentId");
+    expect(stored).not.toHaveProperty("recurring");
+  });
+
+  it("sync activates Pro only for a verified $29 USD Cadence success", async () => {
+    const agent = request.agent(app);
+    await startCheckout(agent);
+    const userId = [...state.subscriptions.keys()][0];
+
+    state.providerIntents.set("int_1", {
+      status: "SUCCEEDED",
+      amount: 29,
+      currency: "USD",
+      metadata: { cadence_plan: "pro", cadence_user_id: userId },
+    });
+    const sync = await sameOriginPost(agent, "/api/billing/checkout/int_1/sync");
+    expect(sync.body).toEqual({
+      plan: "pro",
+      status: "active",
+      billingConfigured: true,
+    });
+
+    for (const tampered of [
+      { amount: 2900 },
+      { currency: "EUR" },
+      { metadata: { cadence_plan: "pro", cadence_user_id: "someone-else" } },
+    ]) {
+      await sameOriginPost(agent, "/api/billing/reset-demo");
+      const checkout = await startCheckout(agent);
+      const intentId = checkout.body.intentId as string;
+      state.providerIntents.set(intentId, {
+        status: "SUCCEEDED",
+        amount: 29,
+        currency: "USD",
+        metadata: { cadence_plan: "pro", cadence_user_id: userId },
+        ...tampered,
+      });
+      const rejected = await sameOriginPost(agent, `/api/billing/checkout/${intentId}/sync`);
+      expect(rejected.status).toBe(200);
+      expect(rejected.body).toMatchObject({ plan: "starter", status: "pending" });
+      expect([...state.subscriptions.values()][0]).not.toHaveProperty("currentPeriodEnd");
+    }
+  });
+
+  it("does not expose cancellation or a billing period for the one-time sandbox payment", async () => {
+    const agent = request.agent(app);
+    await startCheckout(agent);
+    state.providerIntents.set("int_1", {
+      status: "SUCCEEDED",
+      amount: 29,
+      currency: "USD",
+      metadata: {
+        cadence_plan: "pro",
+        cadence_user_id: [...state.subscriptions.keys()][0],
+      },
+    });
+    await sameOriginPost(agent, "/api/billing/checkout/int_1/sync");
+
+    const cancel = await sameOriginPost(agent, "/api/billing/cancel");
+
+    expect(cancel.status).toBe(404);
+    expect((await agent.get("/api/billing/status")).body).toEqual({
+      plan: "pro",
+      status: "active",
+      billingConfigured: true,
+    });
+  });
+
   it("propagates Starter through checkout to verified Pro status", async () => {
     const agent = request.agent(app);
     expect((await agent.get("/api/billing/status")).body).toMatchObject({
@@ -214,9 +347,14 @@ describe("billing regression flow", () => {
 
     state.providerIntents.set("int_1", {
       status: "SUCCEEDED",
-      payment_consent_id: "consent_1",
+      amount: 29,
+      currency: "USD",
+      metadata: {
+        cadence_plan: "pro",
+        cadence_user_id: [...state.subscriptions.keys()][0],
+      },
     });
-    const sync = await agent.post("/api/billing/checkout/int_1/sync");
+    const sync = await sameOriginPost(agent, "/api/billing/checkout/int_1/sync");
     expect(sync.body).toMatchObject({ plan: "pro", status: "active" });
     expect((await agent.get("/api/billing/status")).body).toMatchObject({
       plan: "pro",
@@ -289,7 +427,7 @@ describe("billing regression flow", () => {
     const agent = request.agent(app);
     await startCheckout(agent);
 
-    const reset = await agent.post("/api/billing/reset-demo");
+    const reset = await sameOriginPost(agent, "/api/billing/reset-demo");
     expect(reset.body).toMatchObject({ plan: "starter", status: "inactive" });
     expect([...state.subscriptions.values()][0].airwallexPaymentIntentId).toBeNull();
 
@@ -298,19 +436,59 @@ describe("billing regression flow", () => {
     expect(nextCheckout.body.intentId).toBe("int_2");
   });
 
+  it("accepts a decoded hex webhook signature", async () => {
+    const agent = request.agent(app);
+    await startCheckout(agent);
+    const body = JSON.stringify(successfulWebhookEvent);
+    const timestamp = String(Date.now());
+    const rawSignature = createHmac("sha256", process.env.AIRWALLEX_WEBHOOK_SECRET!)
+      .update(timestamp)
+      .update(body)
+      .digest();
+    const signature = Buffer.from(String.fromCharCode(...rawSignature), "latin1").toString("hex");
+
+    const response = await request(app)
+      .post("/api/billing/webhook")
+      .set("content-type", "application/json")
+      .set("x-timestamp", timestamp)
+      .set("x-signature", signature)
+      .send(body);
+
+    expect(response.status).toBe(200);
+    expect(state.webhookEvents.has("evt_success")).toBe(true);
+  });
+
+  it("claims webhook events atomically before applying state", async () => {
+    const agent = request.agent(app);
+    await startCheckout(agent);
+
+    const [first, second] = await Promise.all([
+      signedWebhook(successfulWebhookEvent),
+      signedWebhook(successfulWebhookEvent),
+    ]);
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(state.webhookEvents.size).toBe(1);
+    expect(state.webhookSubscriptionUpdates).toBe(1);
+    expect([...state.subscriptions.values()][0]).toMatchObject({
+      plan: "pro",
+      status: "active",
+    });
+  });
+
   it("replays a successful webhook safely", async () => {
     const agent = request.agent(app);
     await startCheckout(agent);
 
     expect((await signedWebhook(successfulWebhookEvent)).status).toBe(200);
-    const firstPeriodEnd = [...state.subscriptions.values()][0].currentPeriodEnd;
     expect((await signedWebhook(successfulWebhookEvent)).status).toBe(200);
 
     expect(state.webhookEvents.size).toBe(1);
+    expect(state.webhookSubscriptionUpdates).toBe(1);
     expect([...state.subscriptions.values()][0]).toMatchObject({
       plan: "pro",
       status: "active",
-      currentPeriodEnd: firstPeriodEnd,
     });
   });
 

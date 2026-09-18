@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, Plus, RotateCcw, Settings2, Sparkles } from 'lucide-react';
+import { Bell, CalendarDays, ChevronDown, CreditCard, LayoutDashboard, RotateCcw, Settings2, Sparkles } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, testId: 'link-nav-dashboard' },
@@ -63,7 +63,7 @@ export function CadenceShell({ children }: CadenceShellProps) {
           <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#C2410C] text-xs font-extrabold text-white">NR</span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold text-stone-900">Northstar Roasters</span>
-            <span className="mt-0.5 block text-[11px] text-stone-500">Maya&apos;s workspace</span>
+            <span className="mt-0.5 block text-[11px] text-stone-500">Read-only sample</span>
           </span>
           <ChevronDown className="h-4 w-4 text-stone-400" />
         </Link>
@@ -101,15 +101,12 @@ export function CadenceShell({ children }: CadenceShellProps) {
         <div className="mt-auto rounded-[10px] border border-stone-200 bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[11px] font-semibold text-stone-600">{isPro ? 'Pro plan' : 'Starter plan'}</span>
-            <span className="rounded-full bg-[#C2410C]/10 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">{isPro ? 'Active' : '10 / 10'}</span>
+            <span className="rounded-full bg-[#C2410C]/10 px-2 py-0.5 text-[10px] font-bold text-[#C2410C]">{isPro ? 'Unlocked' : 'Sample'}</span>
           </div>
-          <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
-            <div className={`h-full rounded-full bg-[#C2410C] ${isPro ? 'w-1/4' : 'w-full'}`} />
-          </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-stone-500">{isPro ? 'Unlimited scheduling is enabled.' : 'You’re at your monthly limit.'}</p>
+          <p className="mb-3 text-[11px] leading-relaxed text-stone-500">{isPro ? 'One-time sandbox payment confirmed.' : 'No live scheduling or social connections.'}</p>
           <Link href={isPro ? '/billing' : '/pricing'} className="flex items-center justify-center gap-2 rounded-[10px] border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-bold text-stone-900 transition-colors hover:bg-stone-100" data-testid="link-sidebar-upgrade">
             <Sparkles className="h-3.5 w-3.5" />
-            {isPro ? 'Manage plan' : 'See Pro'}
+            {isPro ? 'View payment' : 'See samples'}
           </Link>
         </div>
       </aside>
@@ -135,8 +132,8 @@ export function CadenceShell({ children }: CadenceShellProps) {
               </button>
               {notificationsOpen && (
                 <div id="notifications-panel" className="absolute right-0 top-12 w-[min(16rem,calc(100vw-2rem))] rounded-[10px] border border-stone-200 bg-white p-4 shadow-lg" data-testid="panel-notifications">
-                  <p className="text-xs font-bold text-stone-900">You&apos;re all caught up</p>
-                  <p className="mt-1 text-xs leading-relaxed text-stone-500">Your next post is queued for Friday at 8:30 AM.</p>
+                  <p className="text-xs font-bold text-stone-900">Sample notification</p>
+                  <p className="mt-1 text-xs leading-relaxed text-stone-500">The fictional calendar shows a post on Friday at 8:30 AM. Nothing will publish.</p>
                 </div>
               )}
             </div>
@@ -185,16 +182,6 @@ export function CadenceShell({ children }: CadenceShellProps) {
             );
           })}
           
-          <Link
-            href="/dashboard"
-            className="flex flex-col items-center justify-center w-16 h-full"
-            data-testid="button-mobile-schedule"
-          >
-             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C2410C] text-white shadow-sm transition-transform active:scale-95">
-                <Plus className="h-5 w-5" strokeWidth={2.5} />
-             </div>
-          </Link>
-
           <Link href="/pricing" className={`flex flex-col items-center justify-center gap-1.5 w-16 h-full ${location === '/pricing' ? 'text-[#C2410C]' : 'text-stone-500 hover:text-stone-900'}`} data-testid="mobile-link-nav-pricing">
              <Sparkles className="h-5 w-5" strokeWidth={location === '/pricing' ? 2.5 : 2} />
              <span className="text-[10px] font-bold">Pricing</span>

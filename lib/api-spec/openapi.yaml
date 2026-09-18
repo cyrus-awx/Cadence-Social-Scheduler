@@ -11,7 +11,7 @@ tags:
   - name: health
     description: Health operations
   - name: billing
-    description: Cadence subscription billing
+    description: Cadence one-time sandbox payment demo
 paths:
   /healthz:
     get:
@@ -58,17 +58,6 @@ paths:
           description: Billing is not configured
         "409":
           description: Pro is active or another checkout is already pending
-  /billing/cancel:
-    post:
-      operationId: cancelBillingSubscription
-      tags: [billing]
-      responses:
-        "200":
-          description: Updated subscription state
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BillingStatus"
   /billing/checkout/{intentId}/sync:
     post:
       operationId: syncBillingCheckout
@@ -97,8 +86,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingStatus"
-        "403":
-          description: Demo reset is unavailable in production
 components:
   schemas:
     HealthStatus:
@@ -117,14 +104,9 @@ components:
         status:
           type: string
           enum: [inactive, pending, active, past_due, canceled]
-        cancelAtPeriodEnd:
-          type: boolean
-        currentPeriodEnd:
-          type: [string, "null"]
-          format: date-time
         billingConfigured:
           type: boolean
-      required: [plan, status, cancelAtPeriodEnd, currentPeriodEnd, billingConfigured]
+      required: [plan, status, billingConfigured]
     CreateCheckoutRequest:
       type: object
       properties:
@@ -147,6 +129,6 @@ components:
           type: number
         environment:
           type: string
-          enum: [demo, prod]
+          enum: [demo]
       required: [intentId, clientSecret, customerId, currency, amount, environment]
 

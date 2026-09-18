@@ -31,9 +31,6 @@ export const BillingStatusStatus = {
 export interface BillingStatus {
   plan: BillingStatusPlan;
   status: BillingStatusStatus;
-  cancelAtPeriodEnd: boolean;
-  /** @nullable */
-  currentPeriodEnd: string | null;
   billingConfigured: boolean;
 }
 
@@ -53,7 +50,6 @@ export type CheckoutSessionEnvironment = typeof CheckoutSessionEnvironment[keyof
 
 export const CheckoutSessionEnvironment = {
   demo: 'demo',
-  prod: 'prod',
 } as const;
 
 export interface CheckoutSession {

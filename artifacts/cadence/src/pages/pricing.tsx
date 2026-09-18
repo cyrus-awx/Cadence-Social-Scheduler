@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { planFeatures } from '@/lib/cadence-data';
 
 const plans = [
-  { name: 'Starter', price: '$0', description: 'A simple rhythm for getting started.', tone: 'quiet', cta: 'Current plan' },
-  { name: 'Pro', price: '$29', description: 'More room to build a consistent presence.', tone: 'featured', cta: 'Upgrade to Pro' },
-  { name: 'Business', price: '$79', description: 'A shared workspace for growing teams.', tone: 'quiet', cta: 'View billing info' },
+  { name: 'Starter', price: '$0', description: 'The default read-only sample state.', tone: 'quiet', cta: 'Current state' },
+  { name: 'Pro', price: '$29', description: 'Unlock local Pro state with one sandbox payment.', tone: 'featured', cta: 'Try sandbox payment' },
+  { name: 'Business', price: '—', description: 'A presentation-only example with no checkout.', tone: 'quiet', cta: 'Unavailable' },
 ] as const;
 
 export default function Pricing() {
@@ -35,7 +35,7 @@ export default function Pricing() {
               <p className={`text-sm font-bold ${plan.tone === 'featured' ? 'text-white/80' : 'text-stone-500'}`}>{plan.name}</p>
               {plan.tone === 'featured' && <span className="rounded-[10px] bg-white/20 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-white" data-testid="badge-recommended">Recommended</span>}
             </div>
-            <div className="mt-6 flex items-baseline gap-1"><span className="text-4xl font-extrabold tracking-[-0.05em]" data-testid={`text-price-${plan.name.toLowerCase()}`}>{plan.price}</span><span className={`text-xs ${plan.tone === 'featured' ? 'text-white/70' : 'text-stone-400'}`}>/ month</span></div>
+            <div className="mt-6 flex items-baseline gap-1"><span className="text-4xl font-extrabold tracking-[-0.05em]" data-testid={`text-price-${plan.name.toLowerCase()}`}>{plan.price}</span><span className={`text-xs ${plan.tone === 'featured' ? 'text-white/70' : 'text-stone-400'}`}>{plan.name === 'Pro' ? 'one-time sandbox' : plan.name === 'Starter' ? 'sample' : 'not offered'}</span></div>
             <p className={`mt-3 min-h-[40px] text-sm leading-relaxed ${plan.tone === 'featured' ? 'text-white/90' : 'text-stone-500'}`}>{plan.description}</p>
             <div className={`my-6 h-px ${plan.tone === 'featured' ? 'bg-white/20' : 'bg-stone-200'}`} />
             <ul className="space-y-4">
@@ -53,7 +53,7 @@ export default function Pricing() {
       </div>
 
       <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-[10px] border border-stone-200 bg-white p-5 sm:flex-row sm:items-center sm:px-6" data-testid="status-pricing-note">
-        <div><p className="text-sm font-semibold text-stone-900">No contracts. No surprise invoices.</p><p className="mt-1 text-xs text-stone-500">This workspace is showing plan information only. Nothing changes without your say-so.</p></div>
+        <div><p className="text-sm font-semibold text-stone-900">Sample plans, not production subscriptions.</p><p className="mt-1 text-xs text-stone-500">The $29 Pro action is one Airwallex sandbox payment. It does not renew or create saved consent.</p></div>
         <Link href="/billing" className="flex min-h-11 w-full shrink-0 items-center justify-center rounded-[10px] border border-stone-200 px-4 text-xs font-bold text-[#C2410C] hover:bg-stone-50 hover:text-[#9a340a] sm:w-auto" data-testid="link-pricing-billing">See current billing status →</Link>
       </div>
     </div>

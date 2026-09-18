@@ -1,23 +1,15 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Link } from 'wouter';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">
-              404 Page Not Found
-            </h1>
-          </div>
-
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <section className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-start justify-center" aria-labelledby="not-found-heading">
+      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#C2410C]">404</p>
+      <h1 id="not-found-heading" className="mt-2 text-3xl font-extrabold tracking-[-0.05em] text-stone-900">This page is off the calendar.</h1>
+      <p className="mt-3 text-sm leading-relaxed text-stone-500">The route does not exist in this Cadence sample.</p>
+      <Link href="/dashboard" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-[10px] bg-[#C2410C] px-5 text-sm font-bold text-white hover:bg-[#9a340a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-offset-2">
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to overview
+      </Link>
+    </section>
   );
 }
