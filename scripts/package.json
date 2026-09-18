@@ -4,11 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "cleanup:billing-test-schemas": "tsx ./src/cleanup-billing-test-schemas.ts",
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.0",
     "tsx": "catalog:"
   }
 }

@@ -20,6 +20,7 @@ let db: typeof import("@workspace/db")["db"];
 let pool: typeof import("@workspace/db")["pool"];
 let setupPool: pg.Pool;
 const testSchema = `billing_test_${randomUUID().replaceAll("-", "")}`;
+const testApplicationName = `billing-test:${testSchema}`;
 
 beforeAll(async () => {
   process.env.SESSION_SECRET = "billing-postgres-test-session-secret";
@@ -28,9 +29,18 @@ beforeAll(async () => {
     throw new Error("DATABASE_URL is required for the PostgreSQL billing regression");
   }
 
-  setupPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  const setupDatabaseUrl = new URL(process.env.DATABASE_URL);
+  setupDatabaseUrl.searchParams.set("application_name", testApplicationName);
+  setupPool = new pg.Pool({ connectionString: setupDatabaseUrl.toString() });
   await setupPool.query(`create schema "${testSchema}"`);
   await setupPool.query(`
+    create table "${testSchema}".billing_test_schema_owner (
+      marker text primary key check (marker = 'cadence-billing-test'),
+      owner_id text not null,
+      created_at timestamptz not null default now()
+    );
+    insert into "${testSchema}".billing_test_schema_owner (marker, owner_id)
+    values ('cadence-billing-test', '${testSchema}');
     create table "${testSchema}".billing_subscriptions (
       user_id text primary key,
       plan text not null default 'starter',
@@ -54,6 +64,7 @@ beforeAll(async () => {
 
   const isolatedDatabaseUrl = new URL(process.env.DATABASE_URL);
   isolatedDatabaseUrl.searchParams.set("options", `-csearch_path=${testSchema}`);
+  isolatedDatabaseUrl.searchParams.set("application_name", testApplicationName);
   process.env.DATABASE_URL = isolatedDatabaseUrl.toString();
   ({ db, pool } = await import("@workspace/db"));
   app = (await import("../app")).default;
