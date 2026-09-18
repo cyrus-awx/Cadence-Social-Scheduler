@@ -11,8 +11,5 @@ import type { BillingStatusStatus } from './billingStatusStatus';
 export interface BillingStatus {
   plan: BillingStatusPlan;
   status: BillingStatusStatus;
-  cancelAtPeriodEnd: boolean;
-  /** @nullable */
-  currentPeriodEnd: Date | null;
   billingConfigured: boolean;
 }

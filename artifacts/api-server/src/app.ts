@@ -49,6 +49,22 @@ app.post(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.SESSION_SECRET));
+app.use("/api", (req, res, next) => {
+  if (req.method !== "POST") {
+    next();
+    return;
+  }
+
+  const origin = req.header("origin");
+  const fetchSite = req.header("sec-fetch-site");
+  const expectedOrigin = `${req.protocol}://${req.get("host")}`;
+  const sameSiteRequest = fetchSite === "same-origin";
+  if (origin !== expectedOrigin && !sameSiteRequest) {
+    res.status(403).json({ message: "Requests must come from this site." });
+    return;
+  }
+  next();
+});
 
 app.use("/api", router);
 

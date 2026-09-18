@@ -6,16 +6,18 @@
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "cleanup:billing-test-schemas": "pnpm --filter @workspace/scripts run cleanup:billing-test-schemas",
+    "test": "vitest run artifacts/api-server/src/routes/billing.test.ts artifacts/cadence/src/lib/cadence-data.test.ts",
     "test:billing": "vitest run artifacts/api-server/src/routes/billing.test.ts artifacts/api-server/src/routes/billing.postgres.test.ts",
+    "test:coverage": "vitest run --coverage --coverage.include=artifacts/api-server/src/routes/billing.ts --coverage.include=artifacts/cadence/src/lib/cadence-data.ts --coverage.thresholds.statements=80 --coverage.thresholds.branches=80 --coverage.thresholds.functions=80 --coverage.thresholds.lines=80 artifacts/api-server/src/routes/billing.test.ts artifacts/cadence/src/lib/cadence-data.test.ts",
+    "test:e2e": "playwright test",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
   "private": true,
-  "dependencies": {
-    "@replit/connectors-sdk": "^0.4.3"
-  },
   "devDependencies": {
+    "@playwright/test": "1.55.0",
     "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "5.0.1",
     "prettier": "^3.9.6",
     "supertest": "^7.2.2",
     "typescript": "~5.9.3",

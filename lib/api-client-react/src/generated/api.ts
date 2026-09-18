@@ -284,74 +284,6 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCreateBillingCheckoutMutationOptions(options));
     }
 
-export const getCancelBillingSubscriptionUrl = () => {
-
-
-
-
-  return `/api/billing/cancel`
-}
-
-export const cancelBillingSubscription = async ( options?: Parameters<typeof customFetch>[1]): Promise<BillingStatus> => {
-
-  return customFetch<BillingStatus>(getCancelBillingSubscriptionUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-
-
-export const getCancelBillingSubscriptionMutationKey = () => ['cancelBillingSubscription'] as const;
-
-export const getCancelBillingSubscriptionMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelBillingSubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof cancelBillingSubscription>>, TError,void, TContext> => {
-
-const mutationKey = getCancelBillingSubscriptionMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelBillingSubscription>>, void> = () => {
-
-
-          return  cancelBillingSubscription(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CancelBillingSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof cancelBillingSubscription>>>
-
-    export type CancelBillingSubscriptionMutationError = ErrorType<unknown>
-
-
-    export const useCancelBillingSubscription = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelBillingSubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof cancelBillingSubscription>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getCancelBillingSubscriptionMutationOptions(options));
-    }
-
 export const getSyncBillingCheckoutUrl = (intentId: string,) => {
 
 
@@ -445,7 +377,7 @@ export const resetDemoBilling = async ( options?: Parameters<typeof customFetch>
 
 export const getResetDemoBillingMutationKey = () => ['resetDemoBilling'] as const;
 
-export const getResetDemoBillingMutationOptions = <TError = ErrorType<void>,
+export const getResetDemoBillingMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetDemoBilling>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof resetDemoBilling>>, TError,void, TContext> => {
 
@@ -474,10 +406,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ResetDemoBillingMutationResult = NonNullable<Awaited<ReturnType<typeof resetDemoBilling>>>
 
-    export type ResetDemoBillingMutationError = ErrorType<void>
+    export type ResetDemoBillingMutationError = ErrorType<unknown>
 
 
-    export const useResetDemoBilling = <TError = ErrorType<void>,
+    export const useResetDemoBilling = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetDemoBilling>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resetDemoBilling>>,

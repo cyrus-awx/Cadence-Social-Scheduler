@@ -1,6 +1,31 @@
 export type Platform = 'Instagram' | 'LinkedIn' | 'X';
 export type PostStatus = 'Published' | 'Scheduled';
 
+export const DEMO_TODAY = '2025-04-18';
+
+export function formatDemoDate(date: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(`${date}T12:00:00Z`));
+}
+
+export function getDemoCalendarWeeks(monthOffset: -1 | 0 | 1): number[][] {
+  const first = new Date(Date.UTC(2025, 3 + monthOffset, 1));
+  const gridStart = new Date(first);
+  gridStart.setUTCDate(1 - first.getUTCDay());
+
+  return Array.from({ length: 5 }, (_, week) =>
+    Array.from({ length: 7 }, (_, day) => {
+      const date = new Date(gridStart);
+      date.setUTCDate(gridStart.getUTCDate() + week * 7 + day);
+      return date.getUTCDate();
+    }),
+  );
+}
+
 export type CadencePost = {
   id: string;
   caption: string;
@@ -102,7 +127,7 @@ export const connectedAccounts = [
 ];
 
 export const planFeatures = {
-  Starter: ['10 scheduled posts / month', '3 connected accounts', 'Calendar planning view'],
-  Pro: ['Unlimited scheduled posts', '5 connected accounts', 'Best-time suggestions', 'Post performance notes'],
-  Business: ['Unlimited scheduled posts', '20 connected accounts', 'Team features', 'Approval workflows'],
+  Starter: ['Read-only dashboard sample', '3 fictional profile cards', 'April 2025 calendar'],
+  Pro: ['Local Pro entitlement state', 'One-time sandbox checkout', 'Server-side payment verification', 'Webhook reconciliation demo'],
+  Business: ['Presentation-only plan card', 'No team accounts included', 'No approval workflow included'],
 };

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: cadence_test
+          POSTGRES_USER: cadence
+          POSTGRES_PASSWORD: cadence
+        options: >-
+          --health-cmd "pg_isready -U cadence -d cadence_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      CI: true
+      DATABASE_URL: postgresql://cadence:cadence@127.0.0.1:5432/cadence_test
+      SESSION_SECRET: ci-session-secret-that-is-not-used-outside-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @workspace/api-spec run codegen
+      - run: git diff --exit-code -- lib/api-client-react/src/generated lib/api-zod/src/generated
+      - run: pnpm run test:billing
+      - run: pnpm test
+      - run: pnpm run test:coverage
+      - run: pnpm run test:e2e
+      - run: pnpm run typecheck
+      - run: pnpm run build

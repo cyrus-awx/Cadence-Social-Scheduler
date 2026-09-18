@@ -14,7 +14,6 @@ import {
 } from "../lib/airwallex";
 
 const router = Router();
-const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 const CHECKOUT_ATTEMPT_COOKIE = "cadence_checkout_attempt";
 
 function getUserId(req: Request, res: Response) {
@@ -58,8 +57,6 @@ function serialize(row?: typeof billingSubscriptionsTable.$inferSelect) {
   return {
     plan: row?.plan === "pro" ? "pro" : "starter",
     status: row?.status ?? "inactive",
-    cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
-    currentPeriodEnd: row?.currentPeriodEnd?.toISOString() ?? null,
     billingConfigured: isAirwallexConfigured(),
   };
 }
@@ -150,28 +147,11 @@ router.post("/billing/checkout", async (req, res) => {
     customerId: result.customerId,
     currency: "USD",
     amount: 29,
-    environment: process.env.AIRWALLEX_ENV === "prod" ? "prod" : "demo",
+    environment: "demo",
   });
 });
 
-router.post("/billing/cancel", async (req, res) => {
-  const userId = getUserId(req, res);
-  const [row] = await db
-    .update(billingSubscriptionsTable)
-    .set({ cancelAtPeriodEnd: true, updatedAt: new Date() })
-    .where(and(
-      eq(billingSubscriptionsTable.userId, userId),
-      eq(billingSubscriptionsTable.status, "active"),
-    ))
-    .returning();
-  res.json(serialize(row));
-});
-
 router.post("/billing/reset-demo", async (req, res) => {
-  if (process.env.AIRWALLEX_ENV === "prod") {
-    res.status(403).json({ message: "Demo billing reset is unavailable in production." });
-    return;
-  }
   const userId = getUserId(req, res);
   clearCheckoutAttempt(res);
   const [reset] = await db
@@ -180,9 +160,6 @@ router.post("/billing/reset-demo", async (req, res) => {
       plan: "starter",
       status: "inactive",
       airwallexPaymentIntentId: null,
-      airwallexPaymentConsentId: null,
-      cancelAtPeriodEnd: false,
-      currentPeriodEnd: null,
       lastPaymentError: null,
       updatedAt: new Date(),
     })
@@ -208,18 +185,21 @@ router.post("/billing/checkout/:intentId/sync", async (req, res) => {
 
   const intent = await retrievePaymentIntent(req.params.intentId);
   const providerStatus = typeof intent.status === "string" ? intent.status : "";
-  const consentId = typeof intent.payment_consent_id === "string"
-    ? intent.payment_consent_id
-    : undefined;
+  const metadata = typeof intent.metadata === "object" && intent.metadata !== null
+    ? intent.metadata as Record<string, unknown>
+    : {};
+  const verifiedSuccess = providerStatus === "SUCCEEDED" &&
+    intent.amount === 29 &&
+    intent.currency === "USD" &&
+    metadata.cadence_plan === "pro" &&
+    metadata.cadence_user_id === userId;
   let nextStatus = subscription.status;
   let plan = subscription.plan;
-  let currentPeriodEnd = subscription.currentPeriodEnd;
   let lastPaymentError = subscription.lastPaymentError;
 
-  if (providerStatus === "SUCCEEDED") {
+  if (verifiedSuccess) {
     nextStatus = "active";
     plan = "pro";
-    currentPeriodEnd = new Date(Date.now() + MONTH_MS);
     lastPaymentError = null;
   } else if (["CANCELLED", "FAILED"].includes(providerStatus)) {
     nextStatus = providerStatus === "CANCELLED" ? "canceled" : "past_due";
@@ -231,8 +211,6 @@ router.post("/billing/checkout/:intentId/sync", async (req, res) => {
     .set({
       plan,
       status: nextStatus,
-      currentPeriodEnd,
-      airwallexPaymentConsentId: consentId ?? subscription.airwallexPaymentConsentId,
       lastPaymentError,
       updatedAt: new Date(),
     })
@@ -259,9 +237,12 @@ export async function airwallexWebhook(req: Request, res: Response) {
   const expected = createHmac("sha256", secret)
     .update(timestamp)
     .update(rawBody)
-    .digest("hex");
-  const valid = signature.length === expected.length &&
-    timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    .digest();
+  const decodedSignature = /^[0-9a-f]{64}$/i.test(signature)
+    ? Buffer.from(signature, "hex")
+    : Buffer.alloc(0);
+  const valid = decodedSignature.length === expected.length &&
+    timingSafeEqual(decodedSignature, expected);
   const timestampNumber = Number(timestamp);
   const timestampMs = timestampNumber > 1_000_000_000_000
     ? timestampNumber
@@ -276,49 +257,40 @@ export async function airwallexWebhook(req: Request, res: Response) {
     res.status(200).send("ok");
     return;
   }
-  const [alreadyProcessed] = await db
-    .select({ id: billingWebhookEventsTable.id })
-    .from(billingWebhookEventsTable)
-    .where(eq(billingWebhookEventsTable.id, event.id))
-    .limit(1);
-  if (alreadyProcessed) {
-    res.status(200).send("ok");
-    return;
-  }
+  const eventId = event.id;
+  const eventName = event.name;
+  await db.transaction(async (tx) => {
+    const [claim] = await tx
+      .insert(billingWebhookEventsTable)
+      .values({ id: eventId, eventName, payload: event })
+      .onConflictDoNothing()
+      .returning({ id: billingWebhookEventsTable.id });
+    if (!claim) return;
 
-  const object = event.data?.object ?? {};
-  const intentId = typeof object.id === "string" ? object.id : undefined;
-  if (intentId && event.name === "payment_intent.succeeded") {
-    const consentId = typeof object.payment_consent_id === "string"
-      ? object.payment_consent_id
-      : undefined;
-    await db
-      .update(billingSubscriptionsTable)
-      .set({
-        plan: "pro",
-        status: "active",
-        airwallexPaymentConsentId: consentId,
-        currentPeriodEnd: new Date(Date.now() + MONTH_MS),
-        cancelAtPeriodEnd: false,
-        lastPaymentError: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(billingSubscriptionsTable.airwallexPaymentIntentId, intentId));
-  }
-  if (intentId && ["payment_intent.payment_failed", "payment_intent.cancelled"].includes(event.name)) {
-    await db
-      .update(billingSubscriptionsTable)
-      .set({
-        status: event.name === "payment_intent.payment_failed" ? "past_due" : "canceled",
-        lastPaymentError: event.name,
-        updatedAt: new Date(),
-      })
-      .where(eq(billingSubscriptionsTable.airwallexPaymentIntentId, intentId));
-  }
-  await db
-    .insert(billingWebhookEventsTable)
-    .values({ id: event.id, eventName: event.name, payload: event })
-    .onConflictDoNothing();
+    const object = event.data?.object ?? {};
+    const intentId = typeof object.id === "string" ? object.id : undefined;
+    if (intentId && eventName === "payment_intent.succeeded") {
+      await tx
+        .update(billingSubscriptionsTable)
+        .set({
+          plan: "pro",
+          status: "active",
+          lastPaymentError: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(billingSubscriptionsTable.airwallexPaymentIntentId, intentId));
+    }
+    if (intentId && ["payment_intent.payment_failed", "payment_intent.cancelled"].includes(eventName)) {
+      await tx
+        .update(billingSubscriptionsTable)
+        .set({
+          status: eventName === "payment_intent.payment_failed" ? "past_due" : "canceled",
+          lastPaymentError: eventName,
+          updatedAt: new Date(),
+        })
+        .where(eq(billingSubscriptionsTable.airwallexPaymentIntentId, intentId));
+    }
+  });
   res.status(200).send("ok");
 }
 

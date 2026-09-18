@@ -11,5 +11,4 @@ export type CheckoutSessionEnvironment = typeof CheckoutSessionEnvironment[keyof
 
 export const CheckoutSessionEnvironment = {
   demo: 'demo',
-  prod: 'prod',
 } as const;

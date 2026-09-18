@@ -43,6 +43,8 @@ secrets.json
 /.sass-cache
 /connect.lock
 /coverage
+/playwright-report
+/test-results
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log

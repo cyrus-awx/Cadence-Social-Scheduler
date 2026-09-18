@@ -1,57 +1,45 @@
-# Cadence
+# Cadence on Replit
 
-A polished social media scheduling workspace for small businesses.
+Cadence is a read-only social scheduling UI sample with a one-time $29 USD Airwallex sandbox checkout. All Northstar Roasters content and metrics are fictional. There are no live social connections or publishing jobs, and the payment is not a subscription.
 
-## Run & Operate
+## Run
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server
-- `pnpm --filter @workspace/cadence run dev` — run the Cadence web app
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` and `SESSION_SECRET`
+1. Provision Replit PostgreSQL.
+2. Add `SESSION_SECRET` and the Airwallex sandbox values from `.env.example` in Replit Secrets.
+3. Run `pnpm install`.
+4. Run `pnpm --filter @workspace/db run push` once for the development schema.
+5. Start the **Project** workflow.
 
-## Stack
+Replit artifact routing serves the Cadence web app at `/` and proxies `/api` to the Express artifact.
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+## Commands
 
-## Where things live
+- `pnpm --filter @workspace/api-server run dev` — API artifact
+- `pnpm --filter @workspace/cadence run dev` — web artifact
+- `pnpm test` — mocked API and deterministic sample-date tests
+- `pnpm run test:billing` — includes real PostgreSQL concurrency coverage
+- `pnpm run test:coverage` — enforces 80% coverage for changed behavior
+- `pnpm run test:e2e` — critical read-only and billing browser flows
+- `pnpm run typecheck` — workspace TypeScript checks
+- `pnpm run build` — production builds
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate clients
+- `pnpm --filter @workspace/db run push` — sync development schema
 
-- `artifacts/cadence/src/pages/` — dashboard, calendar, pricing, and billing routes
-- `artifacts/cadence/src/components/` — shared Cadence app shell and post UI
-- `artifacts/cadence/src/lib/cadence-data.ts` — seeded user, post, account, and plan data
-- `artifacts/cadence/src/index.css` — Cadence visual theme
+## Structure
 
-## Architecture decisions
+- `artifacts/cadence` — React/Vite app
+- `artifacts/api-server` — Express and Airwallex sandbox API
+- `lib/db` — Drizzle schema and PostgreSQL connection
+- `lib/api-spec` — OpenAPI source
+- `lib/api-client-react`, `lib/api-zod` — generated clients
+- `scripts` — isolated test-schema cleanup
 
-- The dashboard and calendar use realistic seeded local data.
-- Pro billing uses the native Airwallex Drop-in, server-owned pricing, signed webhooks, idempotent checkout creation, and PostgreSQL subscription state.
+## Guardrails
 
-## Product
-
-- Dashboard summary and social post schedule for Maya Chen's coffee roastery
-- Monthly calendar of scheduled and published posts
-- Starter, Pro, and Business plan comparison
-- Airwallex-powered $29/month Pro upgrade and billing status
-- Starter scheduling limit state with navigation into Pro billing
-
-## User preferences
-
-- Cadence uses terracotta `#C2410C`, warm off-white `#FAFAF9`, Inter, 10px radii, hairline borders, and generous whitespace.
-
-## Gotchas
-
-- Billing requires `AIRWALLEX_CLIENT_ID`, `AIRWALLEX_API_KEY`, and `AIRWALLEX_WEBHOOK_SECRET`; `AIRWALLEX_ENV` is `demo` unless set to `prod`.
-- Airwallex scheduled consent should send `next_triggered_by: merchant` and `merchant_trigger_reason: scheduled` without custom terms.
-- The social scheduling experience is seeded demo UI. Authentication, post persistence/publishing, and recurring collection are production extensions.
-- See `README.md` and `TEMPLATE_SPEC.md` before sharing or remixing the project.
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Keep all provider credentials in Replit Secrets.
+- This repository always calls the Airwallex sandbox API; there is no production switch.
+- The Drop-in is one-time `payment` mode and does not request saved consent.
+- The server owns and verifies status, $29 amount, USD currency, and Cadence user/plan metadata.
+- Cookie-authenticated POSTs must be same-origin; signed provider webhooks are exempt.
+- The sample UI must remain truthful until real social OAuth, persistence, and publishing are implemented.
+- Read `README.md`, `TEMPLATE_SPEC.md`, and `SECURITY.md` before remixing.

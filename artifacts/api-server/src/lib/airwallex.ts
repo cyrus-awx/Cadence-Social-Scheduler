@@ -1,9 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-const isProduction = process.env.AIRWALLEX_ENV === "prod";
-const baseUrl = isProduction
-  ? "https://api.airwallex.com"
-  : "https://api.sandbox.airwallex.com";
+const baseUrl = "https://api.sandbox.airwallex.com";
 
 type AirwallexJson = Record<string, unknown>;
 
@@ -70,7 +67,6 @@ export async function createCustomer(userId: string) {
     });
   } catch (error) {
     if (
-      !isProduction &&
       error instanceof Error &&
       error.message.includes("already exists")
     ) {

@@ -25,7 +25,6 @@ const testApplicationName = `billing-test:${testSchema}`;
 
 beforeAll(async () => {
   process.env.SESSION_SECRET = "billing-postgres-test-session-secret";
-  process.env.AIRWALLEX_ENV = "demo";
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required for the PostgreSQL billing regression");
   }
@@ -48,9 +47,6 @@ beforeAll(async () => {
       status text not null default 'inactive',
       airwallex_customer_id text,
       airwallex_payment_intent_id text,
-      airwallex_payment_consent_id text,
-      cancel_at_period_end boolean not null default false,
-      current_period_end timestamptz,
       last_payment_error text,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
@@ -116,9 +112,9 @@ describe("billing PostgreSQL concurrency", () => {
     const acquiredClients = new Set<unknown>();
     const recordClient = (client: unknown) => acquiredClients.add(client);
     pool.on("acquire", recordClient);
-    const first = agent.post("/api/billing/checkout").send({ plan: "pro" }).then((response) => response);
+    const first = agent.post("/api/billing/checkout").set("sec-fetch-site", "same-origin").send({ plan: "pro" }).then((response) => response);
     await intentStarted;
-    const second = agent.post("/api/billing/checkout").send({ plan: "pro" }).then((response) => response);
+    const second = agent.post("/api/billing/checkout").set("sec-fetch-site", "same-origin").send({ plan: "pro" }).then((response) => response);
     await waitForSeparateTransactions(acquiredClients);
     pool.off("acquire", recordClient);
 

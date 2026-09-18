@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
 title = "Cadence"
-description = "A polished social media scheduling workspace for small businesses, with an at-a-glance dashboard, calendar planning, pricing comparison, and billing status."
+description = "A read-only fictional social scheduling sample with an April 2025 calendar and one-time $29 USD Airwallex sandbox payment."
 version = "1.0.0"
 id = "artifacts/cadence"
 router = "path"

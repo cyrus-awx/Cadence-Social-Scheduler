@@ -20,8 +20,6 @@ export const HealthCheckResponse = zod.object({
 export const GetBillingStatusResponse = zod.object({
   "plan": zod.enum(['starter', 'pro']),
   "status": zod.enum(['inactive', 'pending', 'active', 'past_due', 'canceled']),
-  "cancelAtPeriodEnd": zod.boolean(),
-  "currentPeriodEnd": zod.coerce.date().nullable(),
   "billingConfigured": zod.boolean()
 })
 
@@ -36,16 +34,7 @@ export const CreateBillingCheckoutResponse = zod.object({
   "customerId": zod.string(),
   "currency": zod.string(),
   "amount": zod.number(),
-  "environment": zod.enum(['demo', 'prod'])
-})
-
-
-export const CancelBillingSubscriptionResponse = zod.object({
-  "plan": zod.enum(['starter', 'pro']),
-  "status": zod.enum(['inactive', 'pending', 'active', 'past_due', 'canceled']),
-  "cancelAtPeriodEnd": zod.boolean(),
-  "currentPeriodEnd": zod.coerce.date().nullable(),
-  "billingConfigured": zod.boolean()
+  "environment": zod.enum(['demo'])
 })
 
 
@@ -56,8 +45,6 @@ export const SyncBillingCheckoutParams = zod.object({
 export const SyncBillingCheckoutResponse = zod.object({
   "plan": zod.enum(['starter', 'pro']),
   "status": zod.enum(['inactive', 'pending', 'active', 'past_due', 'canceled']),
-  "cancelAtPeriodEnd": zod.boolean(),
-  "currentPeriodEnd": zod.coerce.date().nullable(),
   "billingConfigured": zod.boolean()
 })
 
@@ -65,8 +52,6 @@ export const SyncBillingCheckoutResponse = zod.object({
 export const ResetDemoBillingResponse = zod.object({
   "plan": zod.enum(['starter', 'pro']),
   "status": zod.enum(['inactive', 'pending', 'active', 'past_due', 'canceled']),
-  "cancelAtPeriodEnd": zod.boolean(),
-  "currentPeriodEnd": zod.coerce.date().nullable(),
   "billingConfigured": zod.boolean()
 })
 
