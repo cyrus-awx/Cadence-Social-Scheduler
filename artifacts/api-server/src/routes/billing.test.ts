@@ -154,6 +154,23 @@ function signedWebhook(event: Record<string, unknown>) {
     .send(body);
 }
 
+const successfulWebhookEvent = {
+  id: "evt_success",
+  name: "payment_intent.succeeded",
+  data: { object: { id: "int_1", payment_consent_id: "consent_1" } },
+};
+
+function expectPendingStarterSubscription() {
+  expect([...state.subscriptions.values()][0]).toMatchObject({
+    plan: "starter",
+    status: "pending",
+    airwallexPaymentIntentId: "int_1",
+    airwallexPaymentConsentId: null,
+    currentPeriodEnd: null,
+  });
+  expect(state.webhookEvents.size).toBe(0);
+}
+
 describe("billing regression flow", () => {
   it("propagates Starter through checkout to verified Pro status", async () => {
     const agent = request.agent(app);
@@ -204,15 +221,10 @@ describe("billing regression flow", () => {
   it("replays a successful webhook safely", async () => {
     const agent = request.agent(app);
     await startCheckout(agent);
-    const event = {
-      id: "evt_success",
-      name: "payment_intent.succeeded",
-      data: { object: { id: "int_1", payment_consent_id: "consent_1" } },
-    };
 
-    expect((await signedWebhook(event)).status).toBe(200);
+    expect((await signedWebhook(successfulWebhookEvent)).status).toBe(200);
     const firstPeriodEnd = [...state.subscriptions.values()][0].currentPeriodEnd;
-    expect((await signedWebhook(event)).status).toBe(200);
+    expect((await signedWebhook(successfulWebhookEvent)).status).toBe(200);
 
     expect(state.webhookEvents.size).toBe(1);
     expect([...state.subscriptions.values()][0]).toMatchObject({
@@ -220,6 +232,58 @@ describe("billing regression flow", () => {
       status: "active",
       currentPeriodEnd: firstPeriodEnd,
     });
+  });
+
+  it("rejects an unsigned webhook without changing access or recording the event", async () => {
+    const agent = request.agent(app);
+    await startCheckout(agent);
+
+    const response = await request(app)
+      .post("/api/billing/webhook")
+      .set("content-type", "application/json")
+      .send(JSON.stringify(successfulWebhookEvent));
+
+    expect(response.status).toBe(400);
+    expect(response.text).toBe("Missing webhook signature");
+    expectPendingStarterSubscription();
+  });
+
+  it("rejects an invalid webhook signature without changing access or recording the event", async () => {
+    const agent = request.agent(app);
+    await startCheckout(agent);
+
+    const response = await request(app)
+      .post("/api/billing/webhook")
+      .set("content-type", "application/json")
+      .set("x-timestamp", String(Date.now()))
+      .set("x-signature", "tampered")
+      .send(JSON.stringify(successfulWebhookEvent));
+
+    expect(response.status).toBe(400);
+    expect(response.text).toBe("Invalid webhook signature");
+    expectPendingStarterSubscription();
+  });
+
+  it("rejects a stale signed webhook without changing access or recording the event", async () => {
+    const agent = request.agent(app);
+    await startCheckout(agent);
+    const body = JSON.stringify(successfulWebhookEvent);
+    const timestamp = String(Date.now() - 6 * 60 * 1000);
+    const signature = createHmac("sha256", process.env.AIRWALLEX_WEBHOOK_SECRET!)
+      .update(timestamp)
+      .update(body)
+      .digest("hex");
+
+    const response = await request(app)
+      .post("/api/billing/webhook")
+      .set("content-type", "application/json")
+      .set("x-timestamp", timestamp)
+      .set("x-signature", signature)
+      .send(body);
+
+    expect(response.status).toBe(400);
+    expect(response.text).toBe("Invalid webhook signature");
+    expectPendingStarterSubscription();
   });
 
   it("records failed payment processing without granting Pro", async () => {
