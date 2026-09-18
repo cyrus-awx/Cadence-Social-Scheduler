@@ -51,7 +51,6 @@ export default function Billing() {
   const queryClient = useQueryClient();
   const [checkout, setCheckout] = useState<CheckoutSession | null>(null);
   const [checkoutState, setCheckoutState] = useState<CheckoutState>({ name: 'idle' });
-  const [checkoutAttempt, setCheckoutAttempt] = useState(0);
   const dropInRef = useRef<ElementTypes['dropIn'] | null>(null);
 
   const statusQuery = useQuery({
@@ -76,14 +75,6 @@ export default function Billing() {
   useEffect(() => {
     if (!checkout) return;
     let disposed = false;
-    const mountTimeout = window.setTimeout(() => {
-      if (!disposed) {
-        setCheckoutState({
-          name: 'error',
-          message: 'The secure checkout took too long to load. Reload it and check that Airwallex sandbox is reachable.',
-        });
-      }
-    }, 20_000);
     void (async () => {
       await init({ env: checkout.environment, enabledElements: ['payments'] });
       const element = await createElement('dropIn', {
@@ -122,19 +113,16 @@ export default function Billing() {
         if (!disposed) setCheckoutState({ name: 'error', message: getPaymentError(error) });
       });
       element.mount('airwallex-drop-in');
-      window.clearTimeout(mountTimeout);
       if (!disposed) setCheckoutState({ name: 'ready' });
     })().catch((error) => {
-      window.clearTimeout(mountTimeout);
       if (!disposed) setCheckoutState({ name: 'error', message: getPaymentError(error) });
     });
     return () => {
       disposed = true;
-      window.clearTimeout(mountTimeout);
       dropInRef.current?.destroy();
       dropInRef.current = null;
     };
-  }, [checkout, checkoutAttempt, queryClient]);
+  }, [checkout, queryClient]);
 
   const status = statusQuery.data;
   const active = status?.status === 'active';
@@ -181,7 +169,6 @@ export default function Billing() {
                 <div id="airwallex-drop-in" aria-label="Airwallex secure payment form" className="min-h-[320px] w-full max-w-full" />
               </div>
               <p className="mt-4 flex items-center justify-center gap-2 text-center text-[11px] text-stone-500"><ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />Payment details are encrypted and handled by Airwallex.</p>
-              <button type="button" onClick={() => { setCheckoutState({ name: 'loading' }); setCheckoutAttempt((attempt) => attempt + 1); }} className="mx-auto mt-3 block min-h-11 rounded-[10px] border border-stone-200 px-4 text-xs font-bold text-stone-500 hover:bg-stone-50 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C]">Reload secure checkout</button>
             </>
           )}
           {checkoutState.name === 'error' && <p className="mt-5 rounded-[10px] bg-red-50 p-3 text-xs leading-relaxed text-red-800" role="alert">{checkoutState.message}</p>}
