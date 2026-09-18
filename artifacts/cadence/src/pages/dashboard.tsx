@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowUpRight, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { Link } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { PostCard } from '@/components/post-card';
 import { cadencePosts } from '@/lib/cadence-data';
 
@@ -8,6 +9,15 @@ export default function Dashboard() {
   const [showLimitMessage, setShowLimitMessage] = useState(false);
   const scheduledPosts = cadencePosts.filter((post) => post.status === 'Scheduled');
   const publishedPosts = cadencePosts.filter((post) => post.status === 'Published');
+  const billingQuery = useQuery({
+    queryKey: ['billing-status'],
+    queryFn: async () => {
+      const response = await fetch('/api/billing/status', { credentials: 'include' });
+      if (!response.ok) throw new Error('Could not load billing status');
+      return response.json() as Promise<{ plan: 'starter' | 'pro'; status: string }>;
+    },
+  });
+  const isPro = billingQuery.data?.plan === 'pro' && billingQuery.data.status === 'active';
   const now = new Date();
   const today = new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
@@ -39,10 +49,10 @@ export default function Dashboard() {
       {showLimitMessage && (
         <div className="mb-9 flex flex-col gap-4 rounded-[10px] border border-stone-200 bg-stone-50 p-4 sm:flex-row sm:items-center sm:justify-between" data-testid="alert-post-limit">
           <div>
-            <p className="text-sm font-semibold text-stone-900">You&apos;ve used all 10 posts on Starter. Upgrade to keep scheduling.</p>
-            <p className="mt-1 text-xs text-stone-500">Your current posts will stay published and on schedule.</p>
+            <p className="text-sm font-semibold text-stone-900">{isPro ? 'Pro scheduling is ready.' : 'You’ve used all 10 posts on Starter. Upgrade to keep scheduling.'}</p>
+            <p className="mt-1 text-xs text-stone-500">{isPro ? 'The post composer is ready for the next product demo step.' : 'Your current posts will stay published and on schedule.'}</p>
           </div>
-          <Link href="/billing?upgrade=pro" className="shrink-0 rounded-[10px] bg-[#C2410C] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="button-upgrade-pro">Upgrade to Pro</Link>
+          {!isPro && <Link href="/billing?upgrade=pro" className="shrink-0 rounded-[10px] bg-[#C2410C] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="button-upgrade-pro">Upgrade to Pro</Link>}
         </div>
       )}
 

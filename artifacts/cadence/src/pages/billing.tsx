@@ -79,6 +79,7 @@ export default function Billing() {
   const queryClient = useQueryClient();
   const [checkout, setCheckout] = useState<CheckoutSession | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
+  const [checkoutAttempt, setCheckoutAttempt] = useState(0);
   const [message, setMessage] = useState('');
   const dropInRef = useRef<DropInElement | null>(null);
 
@@ -93,13 +94,22 @@ export default function Billing() {
       method: 'POST',
       body: JSON.stringify({ plan: 'pro' }),
     }),
-    onSuccess: setCheckout,
+    onSuccess: (session) => {
+      setMessage('');
+      setCheckoutReady(false);
+      setCheckout(session);
+      void queryClient.invalidateQueries({ queryKey: ['billing-status'] });
+    },
     onError: (error) => setMessage(error instanceof Error ? error.message : 'Unable to start checkout.'),
   });
 
   const cancelMutation = useMutation({
     mutationFn: () => api<BillingStatus>('/api/billing/cancel', { method: 'POST' }),
-    onSuccess: (data) => queryClient.setQueryData(['billing-status'], data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['billing-status'], data);
+      setMessage('Your plan will end at the close of the current billing period.');
+    },
+    onError: (error) => setMessage(getPaymentError(error)),
   });
 
   useEffect(() => {
@@ -132,7 +142,10 @@ export default function Billing() {
            }],
          },
       });
-      if (disposed) return;
+       if (disposed) {
+         element.destroy?.();
+         return;
+       }
        dropInRef.current = element;
        element.mount('airwallex-drop-in');
        element.on('ready', () => {
@@ -163,7 +176,7 @@ export default function Billing() {
        dropInRef.current?.destroy?.();
        dropInRef.current = null;
     };
-   }, [checkout, queryClient]);
+   }, [checkout, checkoutAttempt, queryClient]);
 
   const status = statusQuery.data;
   const active = status?.status === 'active';
@@ -210,6 +223,17 @@ export default function Billing() {
                {!checkoutReady && <div className="mt-8 flex items-center justify-center py-10 text-stone-400"><Loader2 className="h-5 w-5 animate-spin" /></div>}
                <div id="airwallex-drop-in" className={checkoutReady ? 'mt-7 min-h-[320px]' : 'h-0 overflow-hidden'} />
                <p className="mt-4 flex items-center justify-center gap-2 text-center text-[11px] text-stone-500"><ShieldCheck className="h-3.5 w-3.5 shrink-0" />Cards and eligible wallets are encrypted and handled by Airwallex.</p>
+               <button
+                 type="button"
+                 onClick={() => {
+                   setCheckoutReady(false);
+                   setMessage('');
+                   setCheckoutAttempt((attempt) => attempt + 1);
+                 }}
+                 className="mx-auto mt-4 block text-xs font-bold text-stone-500 hover:text-stone-900"
+               >
+                 Reload secure checkout
+               </button>
             </>
           )}
           {message && <p className="mt-5 rounded-[10px] bg-stone-100 p-3 text-xs leading-relaxed text-stone-700">{message}</p>}

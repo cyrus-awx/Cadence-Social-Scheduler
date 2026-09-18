@@ -86,7 +86,6 @@ export async function createCustomer(userId: string) {
 export async function createProPaymentIntent(input: {
   userId: string;
   customerId: string;
-  returnUrl: string;
 }) {
   return post("/api/v1/pa/payment_intents/create", {
     request_id: randomUUID(),
@@ -94,7 +93,6 @@ export async function createProPaymentIntent(input: {
     amount: 29,
     currency: "USD",
     customer_id: input.customerId,
-    return_url: input.returnUrl,
     metadata: { cadence_user_id: input.userId, cadence_plan: "pro" },
   });
 }

@@ -43,6 +43,9 @@ export function CadenceShell({ children }: CadenceShellProps) {
       setAccountOpen(false);
       window.location.assign('/billing');
     },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Could not reset demo billing');
+    },
   });
 
   return (

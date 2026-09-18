@@ -1,5 +1,6 @@
 import { Check, Sparkles } from 'lucide-react';
 import { Link } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { planFeatures } from '@/lib/cadence-data';
 
 const plans = [
@@ -9,6 +10,15 @@ const plans = [
 ] as const;
 
 export default function Pricing() {
+  const billingQuery = useQuery({
+    queryKey: ['billing-status'],
+    queryFn: async () => {
+      const response = await fetch('/api/billing/status', { credentials: 'include' });
+      if (!response.ok) throw new Error('Could not load billing status');
+      return response.json() as Promise<{ plan: 'starter' | 'pro'; status: string }>;
+    },
+  });
+  const currentPlan = billingQuery.data?.plan === 'pro' && billingQuery.data.status === 'active' ? 'Pro' : 'Starter';
   return (
     <div className="mx-auto max-w-[1120px]">
       <section className="mx-auto mb-12 max-w-2xl text-center">
@@ -29,10 +39,12 @@ export default function Pricing() {
             <ul className="space-y-4">
               {planFeatures[plan.name as keyof typeof planFeatures].map((feature) => <li key={feature} className={`flex items-start gap-3 text-xs font-medium ${plan.tone === 'featured' ? 'text-white' : 'text-stone-700'}`}><Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${plan.tone === 'featured' ? 'text-white' : 'text-[#C2410C]'}`} />{feature}</li>)}
             </ul>
-            {plan.name === 'Starter' ? (
-              <button type="button" disabled className="mt-8 rounded-[10px] border border-stone-200 bg-stone-50 px-4 py-3 text-xs font-bold text-stone-400 disabled:cursor-not-allowed" data-testid="button-plan-starter">Current plan</button>
+            {plan.name === currentPlan ? (
+              <button type="button" disabled className={`mt-8 rounded-[10px] px-4 py-3 text-xs font-bold disabled:cursor-not-allowed ${plan.tone === 'featured' ? 'bg-white/20 text-white' : 'border border-stone-200 bg-stone-50 text-stone-400'}`} data-testid={`button-plan-${plan.name.toLowerCase()}`}>Current plan</button>
+            ) : plan.name === 'Business' ? (
+              <button type="button" disabled className="mt-8 rounded-[10px] border border-stone-200 px-4 py-3 text-xs font-bold text-stone-400 disabled:cursor-not-allowed" data-testid="button-plan-business">Coming soon</button>
             ) : (
-              <Link href={plan.name === 'Pro' ? '/billing?upgrade=pro' : '/billing'} className={`mt-8 rounded-[10px] px-4 py-3 text-center text-xs font-bold transition-colors ${plan.tone === 'featured' ? 'bg-white text-[#C2410C] hover:bg-stone-100' : 'border border-stone-200 text-[#C2410C] hover:bg-stone-50'}`} data-testid={`link-plan-${plan.name.toLowerCase()}`}>{plan.cta}</Link>
+              <Link href="/billing?upgrade=pro" className={`mt-8 rounded-[10px] px-4 py-3 text-center text-xs font-bold transition-colors ${plan.tone === 'featured' ? 'bg-white text-[#C2410C] hover:bg-stone-100' : 'border border-stone-200 text-[#C2410C] hover:bg-stone-50'}`} data-testid={`link-plan-${plan.name.toLowerCase()}`}>{plan.cta}</Link>
             )}
           </article>
         ))}

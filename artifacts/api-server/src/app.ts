@@ -1,12 +1,14 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cookieParser from "cookie-parser";
-import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { airwallexWebhook } from "./routes/billing";
 
 const app: Express = express();
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET is required.");
+}
 
 app.use(
   pinoHttp({
@@ -27,7 +29,6 @@ app.use(
     },
   }),
 );
-app.use(cors());
 app.post(
   "/api/billing/webhook",
   express.raw({ type: "application/json" }),

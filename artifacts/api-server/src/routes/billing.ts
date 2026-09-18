@@ -66,6 +66,14 @@ router.post("/billing/checkout", async (req, res) => {
     .from(billingSubscriptionsTable)
     .where(eq(billingSubscriptionsTable.userId, userId))
     .limit(1);
+  if (existing?.status === "active") {
+    res.status(409).json({ message: "Pro is already active for this workspace." });
+    return;
+  }
+  if (existing?.status === "pending" && existing.airwallexPaymentIntentId) {
+    res.status(409).json({ message: "A checkout is already in progress. Reset the demo before starting another." });
+    return;
+  }
 
   let customerId = existing?.airwallexCustomerId;
   if (!customerId) {
@@ -74,11 +82,9 @@ router.post("/billing/checkout", async (req, res) => {
     customerId = customer.id;
   }
 
-  const origin = `${req.protocol}://${req.get("host")}`;
   const intent = await createProPaymentIntent({
     userId,
     customerId,
-    returnUrl: `${origin}/billing`,
   });
   if (typeof intent.id !== "string" || typeof intent.client_secret !== "string") {
     throw new Error("Airwallex PaymentIntent response is incomplete");
@@ -233,12 +239,12 @@ export async function airwallexWebhook(req: Request, res: Response) {
     res.status(200).send("ok");
     return;
   }
-  const inserted = await db
-    .insert(billingWebhookEventsTable)
-    .values({ id: event.id, eventName: event.name, payload: event })
-    .onConflictDoNothing()
-    .returning({ id: billingWebhookEventsTable.id });
-  if (inserted.length === 0) {
+  const [alreadyProcessed] = await db
+    .select({ id: billingWebhookEventsTable.id })
+    .from(billingWebhookEventsTable)
+    .where(eq(billingWebhookEventsTable.id, event.id))
+    .limit(1);
+  if (alreadyProcessed) {
     res.status(200).send("ok");
     return;
   }
@@ -272,6 +278,10 @@ export async function airwallexWebhook(req: Request, res: Response) {
       })
       .where(eq(billingSubscriptionsTable.airwallexPaymentIntentId, intentId));
   }
+  await db
+    .insert(billingWebhookEventsTable)
+    .values({ id: event.id, eventName: event.name, payload: event })
+    .onConflictDoNothing();
   res.status(200).send("ok");
 }
 
