@@ -86,10 +86,11 @@ export async function createCustomer(userId: string) {
 export async function createProPaymentIntent(input: {
   userId: string;
   customerId: string;
+  idempotencyKey: string;
 }) {
   return post("/api/v1/pa/payment_intents/create", {
-    request_id: randomUUID(),
-    merchant_order_id: `cadence-pro-${input.userId}-${Date.now()}`,
+    request_id: input.idempotencyKey,
+    merchant_order_id: `cadence-pro-${input.idempotencyKey}`,
     amount: 29,
     currency: "USD",
     customer_id: input.customerId,

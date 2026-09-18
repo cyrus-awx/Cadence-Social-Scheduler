@@ -15,6 +15,7 @@ import {
 
 const router = Router();
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+const CHECKOUT_ATTEMPT_COOKIE = "cadence_checkout_attempt";
 
 function getUserId(req: Request, res: Response) {
   const existing = req.signedCookies?.cadence_user as string | undefined;
@@ -28,6 +29,29 @@ function getUserId(req: Request, res: Response) {
     maxAge: 365 * 24 * 60 * 60 * 1000,
   });
   return id;
+}
+
+function getCheckoutAttemptId(req: Request, res: Response) {
+  const existing = req.signedCookies?.[CHECKOUT_ATTEMPT_COOKIE] as string | undefined;
+  if (existing) return existing;
+  const id = randomUUID();
+  res.cookie(CHECKOUT_ATTEMPT_COOKIE, id, {
+    signed: true,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+  return id;
+}
+
+function clearCheckoutAttempt(res: Response) {
+  res.clearCookie(CHECKOUT_ATTEMPT_COOKIE, {
+    signed: true,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
 }
 
 function serialize(row?: typeof billingSubscriptionsTable.$inferSelect) {
@@ -61,6 +85,7 @@ router.post("/billing/checkout", async (req, res) => {
   }
 
   const userId = getUserId(req, res);
+  const checkoutAttemptId = getCheckoutAttemptId(req, res);
   const result = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
 
@@ -86,6 +111,7 @@ router.post("/billing/checkout", async (req, res) => {
     const intent = await createProPaymentIntent({
       userId,
       customerId,
+      idempotencyKey: checkoutAttemptId,
     });
     if (typeof intent.id !== "string" || typeof intent.client_secret !== "string") {
       throw new Error("Airwallex PaymentIntent response is incomplete");
@@ -113,9 +139,11 @@ router.post("/billing/checkout", async (req, res) => {
   });
 
   if ("conflict" in result) {
+    clearCheckoutAttempt(res);
     res.status(409).json({ message: result.conflict });
     return;
   }
+  clearCheckoutAttempt(res);
   res.json({
     intentId: result.intent.id,
     clientSecret: result.intent.client_secret,
@@ -145,6 +173,7 @@ router.post("/billing/reset-demo", async (req, res) => {
     return;
   }
   const userId = getUserId(req, res);
+  clearCheckoutAttempt(res);
   const [reset] = await db
     .update(billingSubscriptionsTable)
     .set({

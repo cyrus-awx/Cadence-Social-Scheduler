@@ -22,14 +22,19 @@ const state = vi.hoisted(() => ({
   createdIntentIds: [] as string[],
   providerIntents: new Map<string, Record<string, unknown>>(),
   transactionTail: Promise.resolve(),
+  failNextSubscriptionSave: false,
 }));
 
 const airwallex = vi.hoisted(() => ({
   createCustomer: vi.fn(async () => ({ id: "cus_demo" })),
-  createProPaymentIntent: vi.fn(async () => {
+  createProPaymentIntent: vi.fn(async (input: { idempotencyKey: string }) => {
+    const existing = state.providerIntents.get(input.idempotencyKey);
+    if (existing) return existing;
     const id = `int_${state.createdIntentIds.length + 1}`;
     state.createdIntentIds.push(id);
-    return { id, client_secret: `secret_${id}` };
+    const intent = { id, client_secret: `secret_${id}` };
+    state.providerIntents.set(input.idempotencyKey, intent);
+    return intent;
   }),
   isAirwallexConfigured: vi.fn(() => true),
   retrievePaymentIntent: vi.fn(async (id: string) => state.providerIntents.get(id) ?? { status: "PENDING" }),
@@ -87,6 +92,10 @@ vi.mock("@workspace/db", async () => {
         };
         return {
           onConflictDoUpdate: async ({ set }: { set: Partial<Subscription> }) => {
+            if (state.failNextSubscriptionSave) {
+              state.failNextSubscriptionSave = false;
+              throw new Error("simulated subscription save failure");
+            }
             write();
             const row = state.subscriptions.get(values.userId as string)!;
             state.subscriptions.set(row.userId, { ...row, ...set });
@@ -151,6 +160,7 @@ beforeEach(() => {
   state.createdIntentIds.length = 0;
   state.providerIntents.clear();
   state.transactionTail = Promise.resolve();
+  state.failNextSubscriptionSave = false;
   vi.clearAllMocks();
 });
 
@@ -252,6 +262,26 @@ describe("billing regression flow", () => {
 
     expect([firstResponse.status, secondResponse.status].sort()).toEqual([200, 409]);
     expect(airwallex.createProPaymentIntent).toHaveBeenCalledTimes(1);
+    expect([...state.subscriptions.values()][0].airwallexPaymentIntentId).toBe("int_1");
+  });
+
+  it("reuses the provider intent when saving fails and checkout is retried", async () => {
+    const agent = request.agent(app);
+    state.failNextSubscriptionSave = true;
+
+    const failed = await startCheckout(agent);
+    expect(failed.status).toBe(502);
+    expect(state.subscriptions.size).toBe(0);
+    expect(state.createdIntentIds).toEqual(["int_1"]);
+
+    const retried = await startCheckout(agent);
+
+    expect(retried.status).toBe(200);
+    expect(retried.body.intentId).toBe("int_1");
+    expect(airwallex.createProPaymentIntent).toHaveBeenCalledTimes(2);
+    expect(airwallex.createProPaymentIntent.mock.calls[0][0].idempotencyKey)
+      .toBe(airwallex.createProPaymentIntent.mock.calls[1][0].idempotencyKey);
+    expect(state.createdIntentIds).toEqual(["int_1"]);
     expect([...state.subscriptions.values()][0].airwallexPaymentIntentId).toBe("int_1");
   });
 
