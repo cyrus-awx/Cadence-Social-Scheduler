@@ -3,6 +3,7 @@ import request from "supertest";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
 import pg from "pg";
+import { createApplicationTablesInSchema } from "@workspace/db/testing";
 
 const airwallex = vi.hoisted(() => ({
   createCustomer: vi.fn(async (userId: string) => ({
