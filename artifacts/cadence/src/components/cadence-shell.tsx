@@ -49,8 +49,8 @@ export function CadenceShell({ children }: CadenceShellProps) {
   });
 
   return (
-    <div className="min-h-[100dvh] bg-background text-stone-900">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[246px] flex-col border-r border-stone-200 bg-background px-5 py-7 text-stone-900 md:flex">
+    <div className="min-h-[100dvh] bg-background pb-[calc(72px+env(safe-area-inset-bottom))] text-stone-900 lg:pb-0">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[246px] flex-col border-r border-stone-200 bg-background px-5 py-7 text-stone-900 lg:flex">
         <Link href="/dashboard" className="mb-11 flex items-center gap-2.5 px-2" data-testid="link-wordmark">
           <span className="relative flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#C2410C] text-white">
             <span className="absolute h-3.5 w-3.5 rounded-full border-[2.5px] border-current" />
@@ -114,40 +114,40 @@ export function CadenceShell({ children }: CadenceShellProps) {
         </div>
       </aside>
 
-      <div className="md:pl-[246px]">
+      <div className="lg:pl-[246px]">
         <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-stone-200 bg-background/90 px-5 backdrop-blur-md sm:px-8 lg:px-11">
-          <div className="flex items-center gap-3 md:hidden">
+          <div className="flex items-center gap-3 lg:hidden">
             <Link href="/dashboard" className="flex items-center gap-2" data-testid="link-mobile-wordmark">
               <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-[#C2410C] text-white"><span className="h-3 w-3 rounded-full border-2 border-white" /></span>
               <span className="font-extrabold tracking-[-0.05em] text-stone-900">Cadence</span>
             </Link>
           </div>
-          <div className="hidden text-sm font-medium text-stone-500 md:block">
+          <div className="hidden text-sm font-medium text-stone-500 lg:block">
             <span className="text-stone-900">Northstar Roasters</span>
             <span className="mx-2 text-stone-300">/</span>
             <span>{location === '/calendar' ? 'Calendar' : location === '/pricing' ? 'Plans & pricing' : location === '/billing' ? 'Billing' : 'Overview'}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
-              <button type="button" className="relative flex h-9 w-9 items-center justify-center rounded-[10px] text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-900" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Open notifications" data-testid="button-notifications">
+              <button type="button" className="relative flex h-11 w-11 items-center justify-center rounded-[10px] text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C]" onClick={() => { setNotificationsOpen((open) => !open); setAccountOpen(false); }} aria-label="Open notifications" aria-expanded={notificationsOpen} aria-controls="notifications-panel" data-testid="button-notifications">
                 <Bell className="h-[18px] w-[18px]" />
                 <span className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full bg-[#C2410C]" />
               </button>
               {notificationsOpen && (
-                <div className="absolute right-0 top-11 w-64 rounded-[10px] border border-stone-200 bg-white p-4 shadow-sm" data-testid="panel-notifications">
+                <div id="notifications-panel" className="absolute right-0 top-12 w-[min(16rem,calc(100vw-2rem))] rounded-[10px] border border-stone-200 bg-white p-4 shadow-lg" data-testid="panel-notifications">
                   <p className="text-xs font-bold text-stone-900">You&apos;re all caught up</p>
                   <p className="mt-1 text-xs leading-relaxed text-stone-500">Your next post is queued for Friday at 8:30 AM.</p>
                 </div>
               )}
             </div>
             <div className="relative">
-              <button type="button" className="flex items-center gap-2 rounded-[10px] py-1 pl-1 pr-2 transition-colors hover:bg-stone-100" onClick={() => setAccountOpen((open) => !open)} data-testid="button-account-menu">
+              <button type="button" className="flex min-h-11 items-center gap-2 rounded-[10px] py-1 pl-1 pr-2 transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C]" onClick={() => { setAccountOpen((open) => !open); setNotificationsOpen(false); }} aria-expanded={accountOpen} aria-controls="account-menu-panel" data-testid="button-account-menu">
                 <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#C2410C] text-[11px] font-extrabold text-white">MC</span>
                 <span className="hidden text-left sm:block"><span className="block text-xs font-bold text-stone-900">Maya Chen</span><span className="block text-[10px] text-stone-500">Owner</span></span>
                 <ChevronDown className="hidden h-3.5 w-3.5 text-stone-400 sm:block" />
               </button>
               {accountOpen && (
-                <div className="absolute right-0 top-11 w-48 rounded-[10px] border border-stone-200 bg-white p-2 shadow-sm" data-testid="panel-account-menu">
+                <div id="account-menu-panel" className="absolute right-0 top-12 w-[min(12rem,calc(100vw-2rem))] rounded-[10px] border border-stone-200 bg-white p-2 shadow-lg" data-testid="panel-account-menu">
                   <Link href="/billing" className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-xs font-semibold text-stone-900 hover:bg-stone-50" data-testid="link-account-billing"><CreditCard className="h-4 w-4" /> Billing</Link>
                   <button
                     type="button"
@@ -168,9 +168,44 @@ export function CadenceShell({ children }: CadenceShellProps) {
         <main className="cadence-page-enter px-5 py-8 sm:px-8 lg:px-11 lg:py-10">{children}</main>
       </div>
 
-      <Link href="/dashboard" className="fixed bottom-5 right-5 z-20 flex h-12 w-12 items-center justify-center rounded-[10px] border border-stone-200 bg-[#C2410C] text-white transition-transform hover:-translate-y-1 md:hidden" aria-label="Schedule a post" data-testid="button-mobile-schedule">
-        <Plus className="h-5 w-5" />
-      </Link>
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-stone-200 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+        <nav className="flex h-[72px] items-center justify-around px-2" aria-label="Mobile navigation">
+          {navItems.map(({ href, label, icon: Icon, testId }) => {
+            const active = location === href || (href === '/dashboard' && location === '/');
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex flex-col items-center justify-center gap-1.5 w-16 h-full ${active ? 'text-[#C2410C]' : 'text-stone-500 hover:text-stone-900'}`}
+                data-testid={`mobile-${testId}`}
+              >
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                <span className="text-[10px] font-bold">{label}</span>
+              </Link>
+            );
+          })}
+          
+          <Link
+            href="/dashboard"
+            className="flex flex-col items-center justify-center w-16 h-full"
+            data-testid="button-mobile-schedule"
+          >
+             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C2410C] text-white shadow-sm transition-transform active:scale-95">
+                <Plus className="h-5 w-5" strokeWidth={2.5} />
+             </div>
+          </Link>
+
+          <Link href="/pricing" className={`flex flex-col items-center justify-center gap-1.5 w-16 h-full ${location === '/pricing' ? 'text-[#C2410C]' : 'text-stone-500 hover:text-stone-900'}`} data-testid="mobile-link-nav-pricing">
+             <Sparkles className="h-5 w-5" strokeWidth={location === '/pricing' ? 2.5 : 2} />
+             <span className="text-[10px] font-bold">Pricing</span>
+          </Link>
+
+          <Link href="/billing" className={`flex flex-col items-center justify-center gap-1.5 w-16 h-full ${location === '/billing' ? 'text-[#C2410C]' : 'text-stone-500 hover:text-stone-900'}`} data-testid="mobile-link-nav-billing">
+             <CreditCard className="h-5 w-5" strokeWidth={location === '/billing' ? 2.5 : 2} />
+             <span className="text-[10px] font-bold">Billing</span>
+          </Link>
+        </nav>
+      </div>
     </div>
   );
 }

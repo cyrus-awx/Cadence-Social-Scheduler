@@ -200,11 +200,11 @@ export default function Billing() {
             <p className="mt-1 text-xs leading-relaxed text-stone-500">
               {status?.cancelAtPeriodEnd ? 'Your Pro access ends at the close of this billing period.' : active && status?.currentPeriodEnd ? `Renews ${new Date(status.currentPeriodEnd).toLocaleDateString()}.` : 'Upgrade whenever you need more room.'}
             </p>
-            {active && !status.cancelAtPeriodEnd && <button onClick={() => cancelMutation.mutate()} className="mt-5 text-xs font-bold text-stone-500 hover:text-stone-900">Cancel at period end</button>}
+            {active && !status.cancelAtPeriodEnd && <button onClick={() => cancelMutation.mutate()} className="mt-4 min-h-11 rounded-[10px] px-3 text-xs font-bold text-stone-500 hover:bg-stone-50 hover:text-stone-900">Cancel at period end</button>}
           </div>
         </section>
 
-        <section className="rounded-[10px] border border-stone-200 bg-white p-6 sm:p-8">
+        <section className="min-w-0 rounded-[10px] border border-stone-200 bg-white p-5 sm:p-8">
           {active ? (
             <div className="flex min-h-[260px] flex-col items-center justify-center text-center"><CheckCircle2 className="h-9 w-9 text-emerald-600" /><h2 className="mt-4 text-xl font-extrabold text-stone-900">You’re on Pro</h2><p className="mt-2 max-w-sm text-sm text-stone-500">Your workspace has full Pro access.</p></div>
           ) : !checkout ? (
@@ -220,8 +220,8 @@ export default function Billing() {
             <>
               <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#C2410C]">Secure payment</p>
               <h2 className="mt-2 text-xl font-extrabold text-stone-900">Start Pro for $29/month</h2>
-               {!checkoutReady && <div className="mt-8 flex items-center justify-center py-10 text-stone-400"><Loader2 className="h-5 w-5 animate-spin" /></div>}
-               <div id="airwallex-drop-in" className={checkoutReady ? 'mt-7 min-h-[320px]' : 'h-0 overflow-hidden'} />
+               {!checkoutReady && <div className="mt-6 flex items-center justify-center py-6 text-stone-400 sm:mt-8 sm:py-10"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+               <div id="airwallex-drop-in" className={checkoutReady ? 'mt-6 min-h-[320px] w-full max-w-full' : 'h-0 overflow-hidden'} />
                <p className="mt-4 flex items-center justify-center gap-2 text-center text-[11px] text-stone-500"><ShieldCheck className="h-3.5 w-3.5 shrink-0" />Cards and eligible wallets are encrypted and handled by Airwallex.</p>
                <button
                  type="button"
@@ -230,7 +230,7 @@ export default function Billing() {
                    setMessage('');
                    setCheckoutAttempt((attempt) => attempt + 1);
                  }}
-                 className="mx-auto mt-4 block text-xs font-bold text-stone-500 hover:text-stone-900"
+                 className="mx-auto mt-3 min-h-11 rounded-[10px] border border-stone-200 px-4 text-xs font-bold text-stone-500 hover:bg-stone-50 hover:text-stone-900"
                >
                  Reload secure checkout
                </button>

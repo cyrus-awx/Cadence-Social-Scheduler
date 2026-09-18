@@ -40,7 +40,7 @@ export default function Dashboard() {
           <h1 className="text-[30px] font-extrabold tracking-[-0.05em] text-stone-900 sm:text-[36px]" data-testid="text-dashboard-heading">{greeting}, Maya.</h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-stone-500" data-testid="text-dashboard-subheading">Your week is in a good rhythm. Here&apos;s what&apos;s ready to meet the world.</p>
         </div>
-        <button type="button" onClick={() => setShowLimitMessage(true)} className="inline-flex w-fit items-center justify-center gap-2 rounded-[10px] bg-[#C2410C] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#9a340a]" data-testid="button-schedule-new-post">
+        <button type="button" onClick={() => setShowLimitMessage(true)} className="hidden min-h-11 w-fit items-center justify-center gap-2 rounded-[10px] bg-[#C2410C] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#9a340a] lg:inline-flex" data-testid="button-schedule-new-post">
           <Plus className="h-4 w-4" />
           Schedule a post
         </button>
@@ -56,7 +56,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <section className="mb-12 grid gap-6 border-b border-stone-200 pb-10 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mb-12 grid grid-cols-2 gap-x-4 gap-y-7 border-b border-stone-200 pb-10 xl:grid-cols-4">
         <div className="flex flex-col">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-stone-500">Posts coming up</p>
           <p className="mt-2 text-4xl font-extrabold tracking-[-0.05em] text-stone-900" data-testid="text-scheduled-count">{scheduledPosts.length}</p>
