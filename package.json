@@ -5,6 +5,7 @@
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "test:billing": "vitest run artifacts/api-server/src/routes/billing.test.ts",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
@@ -13,7 +14,10 @@
     "@replit/connectors-sdk": "^0.4.3"
   },
   "devDependencies": {
+    "@types/supertest": "^7.2.1",
     "prettier": "^3.9.6",
-    "typescript": "~5.9.3"
+    "supertest": "^7.2.2",
+    "typescript": "~5.9.3",
+    "vitest": "5.0.1"
   }
 }
