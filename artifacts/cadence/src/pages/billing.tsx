@@ -73,6 +73,31 @@ export default function Billing() {
   });
 
   useEffect(() => {
+    if (!checkout || statusQuery.data?.status !== 'pending') return;
+    let disposed = false;
+
+    const syncCheckout = () => {
+      void api<BillingStatus>(`/api/billing/checkout/${encodeURIComponent(checkout.intentId)}/sync`, { method: 'POST' })
+        .then((verified) => {
+          if (disposed) return;
+          queryClient.setQueryData(['billing-status'], verified);
+          if (verified.status === 'active') setCheckoutState({ name: 'succeeded' });
+        })
+        .catch(() => {
+          // The next poll retries provider reconciliation; the Drop-in remains usable.
+        });
+    };
+
+    const initialSync = window.setTimeout(syncCheckout, 1_500);
+    const syncInterval = window.setInterval(syncCheckout, 5_000);
+    return () => {
+      disposed = true;
+      window.clearTimeout(initialSync);
+      window.clearInterval(syncInterval);
+    };
+  }, [checkout, queryClient, statusQuery.data?.status]);
+
+  useEffect(() => {
     if (!checkout) return;
     let disposed = false;
     void (async () => {
