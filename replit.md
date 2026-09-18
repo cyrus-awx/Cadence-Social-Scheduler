@@ -4,13 +4,13 @@ A polished social media scheduling workspace for small businesses.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server
 - `pnpm --filter @workspace/cadence run dev` — run the Cadence web app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` and `SESSION_SECRET`
 
 ## Stack
 
@@ -31,7 +31,7 @@ A polished social media scheduling workspace for small businesses.
 ## Architecture decisions
 
 - The dashboard and calendar use realistic seeded local data.
-- Pro billing uses an embedded Airwallex Card Element, server-owned pricing, signed webhooks, and PostgreSQL subscription state.
+- Pro billing uses the native Airwallex Drop-in, server-owned pricing, signed webhooks, idempotent checkout creation, and PostgreSQL subscription state.
 
 ## Product
 
@@ -39,7 +39,7 @@ A polished social media scheduling workspace for small businesses.
 - Monthly calendar of scheduled and published posts
 - Starter, Pro, and Business plan comparison
 - Airwallex-powered $29/month Pro upgrade and billing status
-- Starter scheduling limit state with an intentionally inert upgrade button
+- Starter scheduling limit state with navigation into Pro billing
 
 ## User preferences
 
@@ -48,7 +48,9 @@ A polished social media scheduling workspace for small businesses.
 ## Gotchas
 
 - Billing requires `AIRWALLEX_CLIENT_ID`, `AIRWALLEX_API_KEY`, and `AIRWALLEX_WEBHOOK_SECRET`; `AIRWALLEX_ENV` is `demo` unless set to `prod`.
-- Airwallex Card Element scheduled consent confirmation should send `next_triggered_by: merchant` and `merchant_trigger_reason: scheduled` without custom terms.
+- Airwallex scheduled consent should send `next_triggered_by: merchant` and `merchant_trigger_reason: scheduled` without custom terms.
+- The social scheduling experience is seeded demo UI. Authentication, post persistence/publishing, and recurring collection are production extensions.
+- See `README.md` and `TEMPLATE_SPEC.md` before sharing or remixing the project.
 
 ## Pointers
 
