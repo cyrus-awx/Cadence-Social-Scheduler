@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { Router, type Request, type Response } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   billingSubscriptionsTable,
@@ -61,57 +61,65 @@ router.post("/billing/checkout", async (req, res) => {
   }
 
   const userId = getUserId(req, res);
-  const [existing] = await db
-    .select()
-    .from(billingSubscriptionsTable)
-    .where(eq(billingSubscriptionsTable.userId, userId))
-    .limit(1);
-  if (existing?.status === "active") {
-    res.status(409).json({ message: "Pro is already active for this workspace." });
-    return;
-  }
-  if (existing?.status === "pending" && existing.airwallexPaymentIntentId) {
-    res.status(409).json({ message: "A checkout is already in progress. Reset the demo before starting another." });
-    return;
-  }
+  const result = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
 
-  let customerId = existing?.airwallexCustomerId;
-  if (!customerId) {
-    const customer = await createCustomer(userId);
-    if (typeof customer.id !== "string") throw new Error("Airwallex customer response has no id");
-    customerId = customer.id;
-  }
+    const [existing] = await tx
+      .select()
+      .from(billingSubscriptionsTable)
+      .where(eq(billingSubscriptionsTable.userId, userId))
+      .limit(1);
+    if (existing?.status === "active") {
+      return { conflict: "Pro is already active for this workspace." } as const;
+    }
+    if (existing?.status === "pending" && existing.airwallexPaymentIntentId) {
+      return { conflict: "A checkout is already in progress. Reset the demo before starting another." } as const;
+    }
 
-  const intent = await createProPaymentIntent({
-    userId,
-    customerId,
-  });
-  if (typeof intent.id !== "string" || typeof intent.client_secret !== "string") {
-    throw new Error("Airwallex PaymentIntent response is incomplete");
-  }
+    let customerId = existing?.airwallexCustomerId;
+    if (!customerId) {
+      const customer = await createCustomer(userId);
+      if (typeof customer.id !== "string") throw new Error("Airwallex customer response has no id");
+      customerId = customer.id;
+    }
 
-  await db
-    .insert(billingSubscriptionsTable)
-    .values({
+    const intent = await createProPaymentIntent({
       userId,
-      status: "pending",
-      airwallexCustomerId: customerId,
-      airwallexPaymentIntentId: intent.id,
-    })
-    .onConflictDoUpdate({
-      target: billingSubscriptionsTable.userId,
-      set: {
+      customerId,
+    });
+    if (typeof intent.id !== "string" || typeof intent.client_secret !== "string") {
+      throw new Error("Airwallex PaymentIntent response is incomplete");
+    }
+
+    await tx
+      .insert(billingSubscriptionsTable)
+      .values({
+        userId,
         status: "pending",
         airwallexCustomerId: customerId,
         airwallexPaymentIntentId: intent.id,
-        updatedAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: billingSubscriptionsTable.userId,
+        set: {
+          status: "pending",
+          airwallexCustomerId: customerId,
+          airwallexPaymentIntentId: intent.id,
+          updatedAt: new Date(),
+        },
+      });
 
+    return { intent, customerId } as const;
+  });
+
+  if ("conflict" in result) {
+    res.status(409).json({ message: result.conflict });
+    return;
+  }
   res.json({
-    intentId: intent.id,
-    clientSecret: intent.client_secret,
-    customerId,
+    intentId: result.intent.id,
+    clientSecret: result.intent.client_secret,
+    customerId: result.customerId,
     currency: "USD",
     amount: 29,
     environment: process.env.AIRWALLEX_ENV === "prod" ? "prod" : "demo",

@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   webhookEvents: new Map<string, Record<string, unknown>>(),
   createdIntentIds: [] as string[],
   providerIntents: new Map<string, Record<string, unknown>>(),
+  transactionTail: Promise.resolve(),
 }));
 
 const airwallex = vi.hoisted(() => ({
@@ -43,7 +44,8 @@ vi.mock("@workspace/db", async () => {
     return [...state.subscriptions.values()][0];
   }
 
-  const db = {
+  const dbBase = {
+    execute: async () => undefined,
     select: (selection?: Record<string, unknown>) => ({
       from: (table: unknown) => ({
         where: () => ({
@@ -115,6 +117,22 @@ vi.mock("@workspace/db", async () => {
       }),
     }),
   };
+  const db = {
+    ...dbBase,
+    transaction: async <T>(callback: (tx: typeof dbBase) => Promise<T>) => {
+      const previous = state.transactionTail;
+      let release!: () => void;
+      state.transactionTail = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await previous;
+      try {
+        return await callback(dbBase);
+      } finally {
+        release();
+      }
+    },
+  };
   return { db };
 });
 
@@ -132,6 +150,7 @@ beforeEach(() => {
   state.webhookEvents.clear();
   state.createdIntentIds.length = 0;
   state.providerIntents.clear();
+  state.transactionTail = Promise.resolve();
   vi.clearAllMocks();
 });
 
@@ -201,6 +220,37 @@ describe("billing regression flow", () => {
     const duplicate = await startCheckout(agent);
 
     expect(duplicate.status).toBe(409);
+    expect(airwallex.createProPaymentIntent).toHaveBeenCalledTimes(1);
+    expect([...state.subscriptions.values()][0].airwallexPaymentIntentId).toBe("int_1");
+  });
+
+  it("serializes overlapping checkout requests before creating a provider intent", async () => {
+    const agent = request.agent(app);
+    let releaseIntent!: () => void;
+    const intentBlocked = new Promise<void>((resolve) => {
+      releaseIntent = resolve;
+    });
+    let signalIntentStarted!: () => void;
+    const intentStarted = new Promise<void>((resolve) => {
+      signalIntentStarted = resolve;
+    });
+    airwallex.createProPaymentIntent.mockImplementationOnce(async () => {
+      signalIntentStarted();
+      await intentBlocked;
+      state.createdIntentIds.push("int_1");
+      return { id: "int_1", client_secret: "secret_int_1" };
+    });
+
+    const first = startCheckout(agent);
+    await intentStarted;
+    const second = startCheckout(agent);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(airwallex.createProPaymentIntent).toHaveBeenCalledTimes(1);
+    releaseIntent();
+    const [firstResponse, secondResponse] = await Promise.all([first, second]);
+
+    expect([firstResponse.status, secondResponse.status].sort()).toEqual([200, 409]);
     expect(airwallex.createProPaymentIntent).toHaveBeenCalledTimes(1);
     expect([...state.subscriptions.values()][0].airwallexPaymentIntentId).toBe("int_1");
   });
