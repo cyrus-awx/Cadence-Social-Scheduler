@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { sql } from "drizzle-orm";
+import pg from "pg";
 
 const airwallex = vi.hoisted(() => ({
   createCustomer: vi.fn(async (userId: string) => ({
@@ -16,24 +18,58 @@ vi.mock("../lib/airwallex", () => airwallex);
 let app: Awaited<typeof import("../app")>["default"];
 let db: typeof import("@workspace/db")["db"];
 let pool: typeof import("@workspace/db")["pool"];
+let setupPool: pg.Pool;
+const testSchema = `billing_test_${randomUUID().replaceAll("-", "")}`;
 
 beforeAll(async () => {
   process.env.SESSION_SECRET = "billing-postgres-test-session-secret";
   process.env.AIRWALLEX_ENV = "demo";
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required for the PostgreSQL billing regression");
+  }
+
+  setupPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  await setupPool.query(`create schema "${testSchema}"`);
+  await setupPool.query(`
+    create table "${testSchema}".billing_subscriptions (
+      user_id text primary key,
+      plan text not null default 'starter',
+      status text not null default 'inactive',
+      airwallex_customer_id text,
+      airwallex_payment_intent_id text,
+      airwallex_payment_consent_id text,
+      cancel_at_period_end boolean not null default false,
+      current_period_end timestamptz,
+      last_payment_error text,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+    create table "${testSchema}".billing_webhook_events (
+      id text primary key,
+      event_name text not null,
+      payload jsonb not null,
+      processed_at timestamptz not null default now()
+    );
+  `);
+
+  const isolatedDatabaseUrl = new URL(process.env.DATABASE_URL);
+  isolatedDatabaseUrl.searchParams.set("options", `-csearch_path=${testSchema}`);
+  process.env.DATABASE_URL = isolatedDatabaseUrl.toString();
   ({ db, pool } = await import("@workspace/db"));
   app = (await import("../app")).default;
 });
 
 afterEach(async () => {
-  await db.execute(sql`
-    delete from billing_subscriptions
-    where airwallex_customer_id like 'postgres-concurrency-test-%'
-  `);
+  await db.execute(sql`truncate table billing_subscriptions, billing_webhook_events`);
   vi.clearAllMocks();
 });
 
 afterAll(async () => {
-  await pool.end();
+  if (pool) await pool.end();
+  if (setupPool) {
+    await setupPool.query(`drop schema if exists "${testSchema}" cascade`);
+    await setupPool.end();
+  }
 });
 
 async function waitForSeparateTransactions(acquiredClients: Set<unknown>) {
